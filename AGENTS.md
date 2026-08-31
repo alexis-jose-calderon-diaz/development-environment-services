@@ -5,6 +5,17 @@
 - Genera explicaciones, análisis, planes, resúmenes y mensajes para el usuario en español.
 - Si el código existente utiliza nombres en inglés, conserva esa convención.
 
+## OpenCode Toolkit
+
+`commands/`, `skills/`, `agents/` y este `AGENTS.md` forman un toolkit coherente de configuración y extensiones de OpenCode. La relación entre ellos es explícita en esta sección, no depende de que compartan un prefijo en sus nombres.
+
+- `commands/`: workflows invocables con sus propios templates y argumentos.
+- `skills/`: capacidades y contratos reutilizables para tareas específicas.
+- `agents/`: roles especializados con instrucciones, permisos y contratos de trabajo.
+- `AGENTS.md`: reglas globales de comportamiento, coordinación y transferencia de contexto.
+
+El orquestador debe interpretar estos recursos como piezas relacionadas cuando una tarea afecte al toolkit, respetando siempre el contrato específico de cada command, skill o agent. `delegation-context` define únicamente la transferencia de contexto y no sustituye las reglas de orquestación de este archivo.
+
 ## Estrategia de orquestación de tareas
 
 Estas reglas son transversales y aplican a cualquier proyecto, lenguaje o tipo de trabajo.
