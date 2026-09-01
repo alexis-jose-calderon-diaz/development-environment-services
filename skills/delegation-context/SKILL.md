@@ -64,7 +64,7 @@ La plantilla completa es:
 ```markdown
 ## Objective
 
-Objetivo concreto que debe cumplir el agente.
+Objetivo concreto que debe cumplir el agente. Si el contexto origen contiene una declaración operativa OpenSpec válida, esta sección debe conservarla como exactamente una línea independiente con el formato `OpenSpec change: <change-id>`, sin backticks, prefijos ni texto inline en el paquete, usando el mismo ID textual. No se crea una sección adicional ni se repite la línea. Si no existe una declaración válida, no se añade ni se infiere ninguna línea o ID.
 
 ## Scope
 
@@ -175,6 +175,10 @@ El orquestador debe convertir esa información en un paquete compacto y específ
 6. entrega un paquete autocontenido para la tarea recibida.
 
 No debe reenviar automáticamente las salidas anteriores ni limitarse a copiar literalmente un informe completo.
+
+La compresión semántica tiene una invariante de transporte para OpenSpec: una declaración válida del contexto origen es información operativa no descartable. Debe viajar como exactamente una línea independiente `OpenSpec change: <change-id>`, fuera de menciones incidentales, backticks, plantillas o texto inline, con el mismo ID textual y sin normalizarlo ni sustituirlo. Una mención incidental, una línea dentro de backticks o plantilla, o un texto inline no cuenta como declaración válida ni activa OpenSpec; tampoco puede sustituir la línea independiente. La notación `<change-id>` solo describe el formato y no es un ID válido.
+
+Si no existe una declaración válida, el paquete no debe insertar ni inferir una línea o ID. Si omite o altera una declaración válida, si la declaración difiere del ID textual de origen, si contiene un ID vacío o placeholder, si presenta una declaración inline como sustituta, o si el origen o el paquete contiene declaraciones múltiples o contradictorias, el paquete es inválido y el orquestador debe bloquear la delegación. Una mención incidental sin declaración válida sigue siendo genérica y no activa OpenSpec. Esta comprobación es contractual y no presupone un hook de runtime.
 
 ## Contexto incremental
 
@@ -404,6 +408,9 @@ Antes de entregar el paquete, el orquestador debe comprobar que:
 - las dependencias que condicionan la tarea están incluidas;
 - los criterios de aceptación son verificables;
 - las validaciones necesarias están indicadas;
+- si el contexto origen contiene una declaración OpenSpec válida, el paquete conserva exactamente una línea independiente `OpenSpec change: <change-id>` con el mismo ID textual, sin omitirla, alterarla, normalizarla ni duplicarla;
+- si no existe una declaración válida, no se inserta ni se infiere ninguna línea o ID; las menciones incidentales, backticks, plantillas y textos inline no cuentan como declaraciones;
+- no hay IDs vacíos o placeholder, declaraciones inline que sustituyan la línea ni declaraciones múltiples o contradictorias; si los hay, el paquete es inválido y la delegación se bloquea;
 - no se han copiado informes ni conversaciones completas;
 - no se ha omitido una restricción o riesgo relevante.
 

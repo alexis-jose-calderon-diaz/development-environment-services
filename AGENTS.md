@@ -16,6 +16,24 @@
 
 El orquestador debe interpretar estos recursos como piezas relacionadas cuando una tarea afecte al toolkit, respetando siempre el contrato específico de cada command, skill o agent. `delegation-context` define únicamente la transferencia de contexto y no sustituye las reglas de orquestación de este archivo.
 
+## Preferencias de herramientas AI-friendly
+
+- Para buscar texto o símbolos, usa preferentemente `rg` en lugar de `grep` recursivo.
+- Para descubrir archivos, usa preferentemente `fd` en lugar de `find`.
+- Para procesar JSON o YAML, usa `jq` o `yq` en lugar de parsear texto manualmente.
+- Para conocer el estado de Git, usa `git status`, `git diff` y `git log` en lugar de interfaces TUI; para GitHub, usa `gh` en lugar de scraping o HTTP manual cuando cubra la operación.
+- Cuando una salida vaya a ser procesada automáticamente, elige la opción estructurada disponible y evita parsear texto pensado para humanos.
+
+## Bootstrap de cambios OpenSpec
+
+- Una tarea es OpenSpec únicamente cuando la solicitud operativa contiene una sola línea inequívoca `OpenSpec change: <change-id>` con un ID no vacío y no placeholder. Una plantilla o ejemplo no cuenta; no infieras el ID desde ramas, rutas ni artifacts.
+- Si la tarea pide trabajo OpenSpec y falta esa línea, el ID es ambiguo o hay IDs contradictorios, detén el trabajo y reporta el error. Si no hay declaración, trata la tarea como genérica y no cargues el bootstrap.
+- Para una tarea declarada, carga la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) antes de cualquier inspección, edición, revisión o validación. Sigue su resolución por CLI, su protocolo fail-closed y su distinción entre artifacts requeridos y opcionales.
+- Toda delegación posterior debe incluir explícitamente la misma línea `OpenSpec change: <change-id>`. El orquestador debe incluir además la responsabilidad y `Scope`, `Out of Scope` y solo el subconjunto contractual relevante; debe remitir al bootstrap para leer artifacts mediante las rutas del CLI, no copiar su contenido.
+- `delegation-context` conserva su función exclusiva de transportar y comprimir el paquete en sus secciones existentes. El bootstrap descubre, lee y deriva el snapshot; no reemplaza `delegation-context`, la división, el paralelismo ni el contexto incremental.
+- En una tarea OpenSpec declarada, `analyzer` consume el snapshot para evaluar impacto; `planner` para fijar tareas, dependencias y gates; `implementer` para implementar contra el contrato; `reviewer` para revisar contra requisitos y criterios; e `integration-checker` para comprobar fronteras, consumidores, artifacts y validaciones. Cada rol carga el bootstrap antes de actuar; una tarea genérica conserva su flujo sin activarlo.
+- Las instrucciones y artifacts OpenSpec son autoritativos sobre el código. Las contradicciones son hallazgos o bloqueos; no se editan artifacts salvo autorización explícita que identifique artifact y operación. Las validaciones solo se reutilizan con el mismo change-id, contexto/estado suficientemente reciente y superficie aplicable; en otro caso se repiten de forma focalizada o se marcan no verificadas.
+
 ## Estrategia de orquestación de tareas
 
 Estas reglas son transversales y aplican a cualquier proyecto, lenguaje o tipo de trabajo.
@@ -26,6 +44,7 @@ Estas reglas son transversales y aplican a cualquier proyecto, lenguaje o tipo d
 - Ejecuta subtareas en serie cuando exista una dependencia real entre ellas.
 - Prefiere subagentes especializados para exploración, análisis, implementación, pruebas e integración.
 - Cuando el trabajo ya esté dividido, asigna cada unidad al `implementer`. Debe completar el código productivo, las pruebas y los contratos directamente relacionados con su unidad, ejecutar validaciones locales, comprobar el resultado y corregir los problemas dentro de su alcance antes de informar. Después de completar todas las unidades, usa `integration-checker` para verificar la coherencia entre múltiples piezas.
+- En una tarea OpenSpec declarada, incorpora `reviewer` como revisión contractual read-only después de las implementaciones y antes de `integration-checker` cuando la superficie lo requiera; transfiere su resumen compacto mediante `delegation-context` sin delegarle correcciones.
 - Delega las investigaciones del repositorio cuando sea posible para evitar que la sesión principal lea grandes cantidades de archivos.
 - Entrega a cada subagente únicamente el contexto necesario para su unidad de trabajo.
 - Una sesión hija no debe representar una feature completa si esta puede dividirse en unidades más pequeñas, pero tampoco debe dividirse una unidad cohesionada en sesiones separadas de implementación, pruebas o contratos sin una dependencia real.
@@ -217,10 +236,7 @@ Considera una tarea grande cuando presente una o más de estas señales:
 
 ## Análisis de cambios Git
 
-Cuando necesites analizar cambios realizados en el código,
-usa preferentemente:
-
-git -c diff.external=difft diff
-
-Usa `git diff` estándar cuando necesites el parche Git exacto,
-por ejemplo para operaciones que dependan del formato tradicional del diff.
+Cuando necesites analizar cambios realizados en el código, reduce primero el
+alcance con `git status --porcelain`, `git diff --name-only` y `git diff --stat`.
+Usa `git diff` estándar cuando necesites el parche Git exacto o una salida que
+deba procesarse automáticamente.
