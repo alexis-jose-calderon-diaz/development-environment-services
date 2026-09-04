@@ -1,8 +1,12 @@
-# OpenCode Toolkit
+# Development Environment Services
 
-## Superficies del repositorio
+## Rol del repositorio
 
-- Este repositorio contiene documentación, configuración de OpenCode y servicios auxiliares; no hay una aplicación, manifest raíz, suite de tests ni CI propios.
+- Este repositorio complementa a `development-environment-host`: contiene la capa de servicios y configuraciones compartidas que se ejecuta dentro del host preparado.
+- No hay una aplicación, manifest raíz, suite de tests ni CI propios; el núcleo operativo es Docker Compose.
+
+## Superficies
+
 - `services/` es un entorno Docker Compose independiente de los proyectos consumidores; `integrations/opencode/` es solo el respaldo versionado de la configuración global.
 - `.opencode/` y `openspec/` contienen el workflow OpenSpec local del repositorio; no los mezcles con `integrations/opencode/` ni los uses como origen de la instalación global.
 - Antes de modificar `integrations/opencode/`, lee `integrations/opencode/AGENTS.md`; esa guía contiene sus reglas específicas y no debe duplicarse aquí.
@@ -12,7 +16,7 @@
 - Desde la raíz, copia `services/.env.example` a `services/.env` y usa `services/docker-compose.yaml` con `--env-file services/.env`; prepara antes la red Docker externa `shared`, que Compose no crea automáticamente.
 - Compose requiere `DEVBOX_PGADMIN_EMAIL` y `DEVBOX_PGADMIN_PASSWORD`; `DEVBOX_WEB_GATEWAY_TS_AUTHKEY` solo es necesario con `--profile tailscale`. No versiones `services/.env` ni credenciales.
 - PostgreSQL y pgAdmin forman el núcleo sin perfil y exponen `127.0.0.1:5432` y `127.0.0.1:5050`; Tailscale solo añade acceso remoto mediante el perfil opcional `tailscale`.
-- Los datos viven en volúmenes persistentes y los nombres de servicio/contenedor son estables para consumidores conectados a `shared`; no añadas configuración específica de un proyecto consumidor.
+- Los datos viven en volúmenes persistentes y los nombres de servicio/contenedor son estables para consumidores conectados a `shared`; no añadas configuración específica de un proyecto consumidor ni intentes ejecutar una segunda instancia en el mismo host.
 - PostgreSQL usa `POSTGRES_HOST_AUTH_METHOD=trust` para desarrollo sobre una red confiable; no reutilices esta configuración en redes no confiables ni en producción.
 
 ## OpenSpec
