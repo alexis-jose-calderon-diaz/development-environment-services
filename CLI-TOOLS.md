@@ -27,18 +27,15 @@ Herramientas con salida determinista, composición por pipelines, automatizació
 | `uvx`             | incluye con uv                                     | Productividad de desarrollo | Ejecutar herramientas Python sin instalarlas globalmente.                 |
 | `python3`         | `sudo apt install python3`                         | Productividad de desarrollo | Intérprete Python para scripts y automatización.                          |
 | `docker`          | `sudo apt install docker.io`                       | Productividad de desarrollo | Construir y ejecutar contenedores.                                        |
+| `dotnet`          | `sudo apt install dotnet-sdk-10.0`                 | Productividad de desarrollo | SDK .NET para crear, compilar y ejecutar aplicaciones.                    |
+| `opencode`        | `npm install -g opencode-ai`                       | Esenciales                  | Agente de coding asistido por IA para terminal.                           |
+| `openspec`        | `npm install -g @fission-ai/openspec`              | Esenciales                  | CLI para desarrollo guiado por especificaciones.                          |
 | `sqlite3`         | `sudo apt install sqlite3`                         | Productividad de desarrollo | Base de datos embebida para pruebas y herramientas locales.               |
 | `shellcheck`      | `sudo apt install shellcheck`                      | Productividad de desarrollo | Detecta errores y malas prácticas en scripts de shell.                    |
-| `kubectl`         | binario oficial (dl.k8s.io)                        | Infraestructura y cloud     | Gestionar clústeres Kubernetes.                                           |
-| `terraform`       | repos oficiales de HashiCorp                       | Infraestructura y cloud     | Infraestructura como código multi-proveedor.                              |
-| `awscli`          | bundle oficial AWS CLI v2                          | Infraestructura y cloud     | Gestionar servicios de AWS.                                               |
-| `psql`            | `sudo apt install postgresql-client`               | Infraestructura y cloud     | Cliente de bases PostgreSQL.                                              |
-| `redis-tools`     | `sudo apt install redis-tools`                     | Infraestructura y cloud     | `redis-cli` para bases Redis.                                             |
+| `psql`            | `sudo apt install postgresql-client`               | Infraestructura y cloud     | Cliente de bases PostgreSQL                                               |
 | `yq`              | binario oficial mikefarah (GitHub releases)        | Infraestructura y cloud     | Procesador YAML/TOML (equivalente a jq).                                  |
 | `hadolint`        | descarga binaria (GitHub releases)                 | Extras                      | Detecta malas prácticas en Dockerfiles.                                   |
 | `universal-ctags` | `sudo apt install universal-ctags`                 | Extras                      | Índices de símbolos para navegar grandes codebases.                       |
-| `go`              | `sudo apt install golang-go`                       | Extras                      | Compilar herramientas escritas en Go.                                     |
-| `cargo` / `rustc` | `sudo apt install cargo`                           | Extras                      | Compilar herramientas escritas en Rust.                                   |
 
 ## Tools human-friendly
 
