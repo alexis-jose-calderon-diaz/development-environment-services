@@ -1,0 +1,67 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "csharpier": {
+      "command": ["dotnet", "csharpier", "format", "$FILE"],
+      "extensions": [".cs"]
+    }
+  },
+  "provider": {
+    "openai": {
+      "models": {
+        "gpt-5.6-luna": {
+          "limit": {
+            "context": 400000,
+            "input": 384000,
+            "output": 16000
+          }
+        }
+      }
+    }
+  },
+  "lsp": true,
+  "permission": {
+    "question": "allow",
+    "external_directory": {
+      "*": "ask",
+      "/tmp/**": "allow",
+      "~/.nuget/**": "allow"
+    },
+    "bash": {
+      "rm *": "ask",
+      "rmdir *": "ask",
+      "unlink *": "ask",
+      "git clean *": "ask",
+      "find * -delete*": "ask",
+      "git add *": "ask",
+      "git commit *": "ask",
+      "git push *": "ask",
+      "git reset *": "ask",
+      "git restore *": "ask"
+    }
+  },
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+      },
+      "enabled": true
+    },
+    "postgres": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--with",
+        "mcp[cli]<2",
+        "postgres-mcp",
+        "--access-mode=restricted"
+      ],
+      "environment": {
+        "DATABASE_URI": "{env:DATABASE_URI}"
+      },
+      "enabled": true
+    }
+  }
+}
