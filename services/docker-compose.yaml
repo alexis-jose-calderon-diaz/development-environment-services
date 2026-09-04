@@ -2,11 +2,14 @@ name: devbox
 
 services:
   devbox-web-gateway:
+    profiles:
+      - tailscale
     image: tailscale/tailscale:stable
     container_name: devbox-web-gateway
     hostname: devbox-web-gateway
     environment:
-      TS_AUTHKEY: ${DEVBOX_WEB_GATEWAY_TS_AUTHKEY:?Define DEVBOX_WEB_GATEWAY_TS_AUTHKEY en .env}
+      # Compose interpolates profile services before filtering them; keep this optional so the core does not require it.
+      TS_AUTHKEY: ${DEVBOX_WEB_GATEWAY_TS_AUTHKEY:-}
       TS_AUTH_ONCE: "true"
       TS_HOSTNAME: devbox-web-gateway
       TS_STATE_DIR: /var/lib/tailscale
@@ -36,6 +39,8 @@ services:
     container_name: devbox-postgres
     environment:
       POSTGRES_DB: postgres
+      # Development only: host connections and containers connected to external `shared` are trusted.
+      # Do not use this authentication policy on untrusted networks or in production.
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_USER: postgres
     ports:
@@ -63,6 +68,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${DEVBOX_PGADMIN_PASSWORD:?Define DEVBOX_PGADMIN_PASSWORD en .env}
       PGADMIN_LISTEN_ADDRESS: 0.0.0.0
       PGADMIN_LISTEN_PORT: "5050"
+    ports:
+      - "127.0.0.1:5050:5050"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     restart: unless-stopped
