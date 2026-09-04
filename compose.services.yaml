@@ -1,0 +1,106 @@
+name: devbox
+
+services:
+  devbox-web-gateway:
+    image: tailscale/tailscale:stable
+    container_name: devbox-web-gateway
+    hostname: devbox-web-gateway
+    environment:
+      TS_AUTHKEY: ${DEVBOX_WEB_GATEWAY_TS_AUTHKEY:?Define DEVBOX_WEB_GATEWAY_TS_AUTHKEY en .env}
+      TS_AUTH_ONCE: "true"
+      TS_HOSTNAME: devbox-web-gateway
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      TS_SERVE_CONFIG: /etc/tailscale/serve.json
+    configs:
+      - source: devbox-web-gateway-serve
+        target: /etc/tailscale/serve.json
+    volumes:
+      - web-gateway-tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    healthcheck:
+      test: [ "CMD", "tailscale", "status", "--peers=false" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - shared
+
+  devbox-postgres:
+    image: postgres:17-alpine
+    container_name: devbox-postgres
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - shared
+
+  devbox-pgadmin:
+    image: dpage/pgadmin4:9.17
+    container_name: devbox-pgadmin
+    depends_on:
+      devbox-postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${DEVBOX_PGADMIN_EMAIL:?Define DEVBOX_PGADMIN_EMAIL en .env}
+      PGADMIN_DEFAULT_PASSWORD: ${DEVBOX_PGADMIN_PASSWORD:?Define DEVBOX_PGADMIN_PASSWORD en .env}
+      PGADMIN_LISTEN_ADDRESS: 0.0.0.0
+      PGADMIN_LISTEN_PORT: "5050"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
+    networks:
+      - shared
+
+volumes:
+  web-gateway-tailscale:
+    name: devbox-web-gateway-tailscale
+  postgres-data:
+    name: devbox-postgres-data
+  pgadmin-data:
+    name: devbox-pgadmin-data
+
+configs:
+  devbox-web-gateway-serve:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://devbox-pgadmin:5050"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": false
+        }
+      }
+
+networks:
+  shared:
+    external: true
+    name: shared
