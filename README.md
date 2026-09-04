@@ -4,34 +4,31 @@ Repositorio público para centralizar recursos reutilizables de OpenCode y mante
 
 ## Propósito
 
-Este repositorio reúne comandos, agentes e instrucciones globales para trabajar con OpenCode de forma consistente, segura y orientada a mantener sesiones pequeñas. Está pensado para crecer con nuevas herramientas y futuras `skills` sin quedar asociado a un proyecto, lenguaje o framework específico.
+Este repositorio reúne documentación, servicios auxiliares y un respaldo versionado de recursos globales para trabajar con OpenCode de forma consistente, segura y orientada a mantener sesiones pequeñas. La integración global es opcional y está separada del flujo interno de OpenSpec del propio repositorio.
 
 ## Contenido
 
-- `commands/`: comandos reutilizables de OpenCode.
-- `agents/`: agentes globales especializados para planificación, implementación, revisión e integración.
-- `AGENTS.md`: reglas globales de orquestación, protección del contexto y uso de agentes.
-- `CLI-TOOLS.md`: inventario operativo de herramientas agent-first y human-first, políticas de selección e instalación.
-- `skills/`: skills reutilizables, incluido el bootstrap de contexto OpenSpec.
+- `integrations/opencode/`: respaldo versionado de la configuración global de OpenCode, con `AGENTS.md`, `opencode.jsonc`, `agents/`, `commands/` y `skills/`. Consulta su [guía de integración](integrations/opencode/README.md).
+- `services/`: servicios auxiliares y su configuración Docker Compose.
+- `openspec/`: cambios y configuración del workflow OpenSpec.
+- `.opencode/`: configuración y extensiones internas de OpenSpec para este repositorio; no es el origen de la instalación global de OpenCode.
 
-## Instalación manual
+## Instalación manual de OpenCode
 
-Clona el repositorio y copia los recursos que quieras utilizar en la configuración global de OpenCode:
+La instalación global es opcional. Clona el repositorio y copia manualmente desde el respaldo versionado de `integrations/opencode/` hacia la configuración operativa de OpenCode:
 
 ```bash
 git clone https://github.com/alexis-jose-calderon-diaz/opencode-toolkit.git
 cd opencode-toolkit
-mkdir -p ~/.config/opencode/commands ~/.config/opencode/agents ~/.config/opencode/skills
-cp commands/*.md ~/.config/opencode/commands/
-cp agents/*.md ~/.config/opencode/agents/
-cp -R skills/* ~/.config/opencode/skills/
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/skills
+cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
+cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
+cp integrations/opencode/agents/*.md ~/.config/opencode/agents/
+cp integrations/opencode/commands/*.md ~/.config/opencode/commands/
+cp -R integrations/opencode/skills/* ~/.config/opencode/skills/
 ```
 
-Combina `AGENTS.md` con las reglas globales existentes antes de reemplazarlo. La skill `openspec-change-context-bootstrap` debe estar instalada en `~/.config/opencode/skills/` para que el bootstrap esté disponible en tareas OpenSpec. Las reglas y recursos instalados se combinan con la configuración existente; reinicia OpenCode después de cambiar comandos, agentes, skills o instrucciones globales.
-
-## Instalación de CLI
-
-La instalación de los recursos de OpenCode no instala automáticamente binarios del sistema ni garantiza que estén disponibles. Consulta [`CLI-TOOLS.md`](CLI-TOOLS.md) para elegir la instalación mínima en Ubuntu 24.04, separar herramientas base de dependencias de desarrollo/infraestructura y comprobar capacidades con `command -v`. No instales por defecto herramientas pesadas o específicas del stack que el proyecto no necesite.
+Revisa y combina `AGENTS.md` con las reglas globales existentes antes de reemplazarlo. La skill `openspec-change-context-bootstrap` debe estar instalada en `~/.config/opencode/skills/` para que el bootstrap esté disponible en tareas OpenSpec. Las reglas y recursos instalados se combinan con la configuración existente; reinicia OpenCode después de cambiar comandos, agentes, skills, configuración o instrucciones globales. Para comparar y mantener ambas ubicaciones, consulta [`integrations/opencode/README.md`](integrations/opencode/README.md).
 
 ## Principios
 
