@@ -3,8 +3,8 @@
   "formatter": {
     "csharpier": {
       "command": ["dotnet", "csharpier", "format", "$FILE"],
-      "extensions": [".cs"]
-    }
+      "extensions": [".cs"],
+    },
   },
   "provider": {
     "openai": {
@@ -13,11 +13,11 @@
           "limit": {
             "context": 400000,
             "input": 384000,
-            "output": 16000
-          }
-        }
-      }
-    }
+            "output": 16000,
+          },
+        },
+      },
+    },
   },
   "lsp": true,
   "permission": {
@@ -25,7 +25,7 @@
     "external_directory": {
       "*": "ask",
       "/tmp/**": "allow",
-      "~/.nuget/**": "allow"
+      "~/.nuget/**": "allow",
     },
     "bash": {
       "rm *": "ask",
@@ -37,17 +37,17 @@
       "git commit *": "ask",
       "git push *": "ask",
       "git reset *": "ask",
-      "git restore *": "ask"
-    }
+      "git restore *": "ask",
+    },
   },
   "mcp": {
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
       "headers": {
-        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}",
       },
-      "enabled": true
+      "enabled": true,
     },
     "postgres": {
       "type": "local",
@@ -56,12 +56,12 @@
         "--with",
         "mcp[cli]<2",
         "postgres-mcp",
-        "--access-mode=restricted"
+        "--access-mode=restricted",
       ],
       "environment": {
-        "DATABASE_URI": "{env:DATABASE_URI}"
+        "DATABASE_URI": "{env:DATABASE_URI}",
       },
-      "enabled": true
-    }
-  }
+      "enabled": true,
+    },
+  },
 }
