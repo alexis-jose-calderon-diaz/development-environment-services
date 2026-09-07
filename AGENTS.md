@@ -14,8 +14,8 @@
 ## Entorno Docker
 
 - Desde la raíz, copia `services/.env.example` a `services/.env` y usa `services/docker-compose.yaml` con `--env-file services/.env`; prepara antes la red Docker externa `shared`, que Compose no crea automáticamente.
-- Compose requiere `DEVBOX_PGADMIN_EMAIL` y `DEVBOX_PGADMIN_PASSWORD`; `DEVBOX_WEB_GATEWAY_TS_AUTHKEY` solo es necesario con `--profile tailscale`. No versiones `services/.env` ni credenciales.
-- PostgreSQL y pgAdmin forman el núcleo sin perfil y exponen `127.0.0.1:5432` y `127.0.0.1:5050`; Tailscale solo añade acceso remoto mediante el perfil opcional `tailscale`.
+- Compose requiere `PGADMIN_EMAIL` y `PGADMIN_PASSWORD`; `WEB_GATEWAY_TS_AUTHKEY` solo es necesario con `--profile tailscale`. pgAdmin se sirve bajo la ruta `/pgadmin`. No versiones `services/.env` ni credenciales.
+- PostgreSQL y pgAdmin forman el núcleo sin perfil y exponen PostgreSQL en `127.0.0.1:5432` y pgAdmin en `127.0.0.1:5050/pgadmin`; Tailscale solo añade acceso remoto mediante el perfil opcional `tailscale`.
 - Los datos viven en volúmenes persistentes y los nombres de servicio/contenedor son estables para consumidores conectados a `shared`; no añadas configuración específica de un proyecto consumidor ni intentes ejecutar una segunda instancia en el mismo host.
 - PostgreSQL usa `POSTGRES_HOST_AUTH_METHOD=trust` para desarrollo sobre una red confiable; no reutilices esta configuración en redes no confiables ni en producción.
 

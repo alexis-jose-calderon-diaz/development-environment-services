@@ -34,7 +34,7 @@ docker compose --env-file services/.env -f services/docker-compose.yaml up -d
 docker compose --env-file services/.env -f services/docker-compose.yaml ps
 ```
 
-Si `shared` ya existe, el primer comando de Docker devolverá un error; en ese caso continúa con los comandos de Compose. PostgreSQL queda disponible en `127.0.0.1:5432` y pgAdmin en [http://127.0.0.1:5050](http://127.0.0.1:5050), usando las credenciales definidas en `services/.env`.
+Si `shared` ya existe, el primer comando de Docker devolverá un error; en ese caso continúa con los comandos de Compose. PostgreSQL queda disponible en `127.0.0.1:5432` y pgAdmin en [http://127.0.0.1:5050/pgadmin](http://127.0.0.1:5050/pgadmin), usando las credenciales definidas en `services/.env`.
 
 Para detener los servicios sin eliminar los datos persistentes:
 
@@ -46,11 +46,13 @@ Los volúmenes se conservan entre reinicios. No uses `down --volumes` salvo que 
 
 ## Acceso remoto opcional
 
-El perfil `tailscale` publica pgAdmin mediante HTTPS sin cambiar los endpoints locales. Sustituye el valor de ejemplo de `DEVBOX_WEB_GATEWAY_TS_AUTHKEY` por una credencial temporal y activa el perfil:
+El perfil `tailscale` publica pgAdmin mediante HTTPS bajo la ruta `/pgadmin`, sin cambiar el endpoint local de PostgreSQL. Sustituye el valor de ejemplo de `WEB_GATEWAY_TS_AUTHKEY` por una credencial temporal y activa el perfil:
 
 ```bash
 docker compose --env-file services/.env -f services/docker-compose.yaml --profile tailscale up -d
 ```
+
+Después, accede a pgAdmin mediante `https://<dominio-tailscale>/pgadmin`.
 
 El núcleo de PostgreSQL y pgAdmin no requiere credenciales de Tailscale cuando el perfil no está activo.
 
