@@ -64,7 +64,7 @@ La plantilla completa es:
 ```markdown
 ## Objective
 
-Objetivo concreto que debe cumplir el agente. Si el contexto origen contiene una declaración operativa OpenSpec válida, esta sección debe conservarla como exactamente una línea independiente con el formato `OpenSpec change: <change-id>`, sin backticks, prefijos ni texto inline en el paquete, usando el mismo ID textual. No se crea una sección adicional ni se repite la línea. Si no existe una declaración válida, no se añade ni se infiere ninguna línea o ID.
+Objetivo concreto que debe cumplir el agente. Si el contexto origen contiene una declaración operativa OpenSpec directa válida, esta sección debe conservar la única línea independiente original con el ID real, sin backticks, prefijos ni texto inline en el paquete. Si el contexto origen contiene un snapshot OpenSpec heredado válido, no es necesario repetir esa línea: el `change-id` y la evidencia del CLI deben viajar estructurados en `Repository Context` y `Dependencies`. Si no existe ninguna fuente OpenSpec válida, no se añade ni se infiere ninguna línea o ID. La notación `OpenSpec change: <change-id>` es metasyntax documental; nunca es un valor transportable ni una salida final.
 
 ## Scope
 
@@ -123,6 +123,22 @@ Builds, tests, lint, análisis o comprobaciones que deben ejecutarse.
 
 Este contrato describe el contenido posible del contexto, no obliga a incluir todas las secciones en cada tarea.
 
+## Transporte de contexto OpenSpec
+
+El paquete admite dos fuentes explícitas y no las sustituye por inferencias:
+
+- **Solicitud directa:** una única línea independiente con un ID real puede viajar en `Objective`. No se aceptan menciones incidentales, texto inline, backticks, ejemplos, plantillas, IDs vacíos ni placeholders.
+- **Snapshot heredado:** una delegación interna puede omitir la línea textual cuando el workflow de origen ya ejecutó `status` e `instructions`/bootstrap. Debe transportar en las secciones existentes, sin crear un formato o sección adicional:
+  - en `Repository Context`, el `change-id` exacto y, cuando estén disponibles, `schemaName`, `changeRoot`, `planningHome` y `actionContext`;
+  - en `Dependencies`, la evidencia de que el snapshot proviene del CLI y, cuando estén disponibles, el estado/progreso, `contextFiles`, rutas de artifacts, `instruction`, `context` y `operationGuidance` emitidos por `status` e `instructions`;
+  - en `Relevant Files`, únicamente las rutas contextuales emitidas por el CLI que sean relevantes para el agente.
+
+Un nombre de cambio o un `change-id` aislado no constituye un snapshot heredado. El paquete que declare contexto OpenSpec debe conservar evidencia suficiente para que el receptor revalide el mismo cambio mediante el bootstrap; la nueva sesión debe volver a ejecutar `status` e `instructions` con el ID exacto antes de inspeccionar código. El snapshot limita y acelera la investigación, pero no reemplaza esa comprobación.
+
+Si aparecen la declaración directa y el snapshot heredado, sus IDs deben coincidir exactamente. Un placeholder (`<change-id>`, `TODO`, `TBD`, `unknown`, `none`, `...` u otro valor de plantilla), una declaración duplicada, IDs contradictorios, evidencia ausente, snapshot obsoleto o una discrepancia con el CLI hacen inválido el paquete: el orquestador debe devolver `BLOCKED` y corregir la propagación. No debe pedir al usuario que complete la plantilla ni degradar a tarea genérica cuando el contexto recibido declara OpenSpec.
+
+La propagación conserva siempre las secciones `Scope` y `Out of Scope`, el subconjunto contractual relevante, `Acceptance Criteria` y `Verification` cuando apliquen. Estas obligaciones no se eliminan por usar un snapshot heredado. La declaración directa sigue siendo válida, pero no es requisito para una delegación interna que transporte un snapshot verificable.
+
 ## Secciones opcionales
 
 El orquestador debe incluir únicamente las secciones que aporten información útil. No debe generar secciones vacías solo para completar la plantilla.
@@ -160,6 +176,7 @@ El paquete de contexto puede construirse a partir de:
 - planes ya aceptados;
 - decisiones técnicas tomadas;
 - archivos descubiertos;
+- snapshots OpenSpec heredados y su estado de resolución emitido por el CLI;
 - símbolos y dependencias encontradas;
 - riesgos pendientes que afecten al siguiente trabajo;
 - resultados de implementaciones anteriores;
@@ -176,9 +193,9 @@ El orquestador debe convertir esa información en un paquete compacto y específ
 
 No debe reenviar automáticamente las salidas anteriores ni limitarse a copiar literalmente un informe completo.
 
-La compresión semántica tiene una invariante de transporte para OpenSpec: una declaración válida del contexto origen es información operativa no descartable. Debe viajar como exactamente una línea independiente `OpenSpec change: <change-id>`, fuera de menciones incidentales, backticks, plantillas o texto inline, con el mismo ID textual y sin normalizarlo ni sustituirlo. Una mención incidental, una línea dentro de backticks o plantilla, o un texto inline no cuenta como declaración válida ni activa OpenSpec; tampoco puede sustituir la línea independiente. La notación `<change-id>` solo describe el formato y no es un ID válido.
+La compresión semántica tiene una invariante de transporte para OpenSpec: debe conservar la fuente válida del contexto origen sin inventar una activación. En una solicitud directa, la información operativa no descartable es exactamente una línea independiente con el mismo ID real, fuera de menciones incidentales, backticks, plantillas o texto inline. En un snapshot heredado, la información no descartable es el `change-id` exacto junto con la evidencia estructurada del CLI en `Repository Context` y `Dependencies`; no se añade una línea textual redundante. La notación `<change-id>` solo describe el formato y no es un ID válido.
 
-Si no existe una declaración válida, el paquete no debe insertar ni inferir una línea o ID. Si omite o altera una declaración válida, si la declaración difiere del ID textual de origen, si contiene un ID vacío o placeholder, si presenta una declaración inline como sustituta, o si el origen o el paquete contiene declaraciones múltiples o contradictorias, el paquete es inválido y el orquestador debe bloquear la delegación. Una mención incidental sin declaración válida sigue siendo genérica y no activa OpenSpec. Esta comprobación es contractual y no presupone un hook de runtime.
+Si no existe una fuente OpenSpec válida, el paquete no debe insertar ni inferir una línea o ID y la tarea permanece genérica. Si omite o altera una declaración directa válida, si el snapshot heredado difiere del ID textual de origen, si contiene un ID vacío o placeholder, si carece de evidencia CLI, si presenta una declaración inline como sustituta, si está obsoleto o si el origen o el paquete contiene declaraciones múltiples o contradictorias, el paquete es inválido y el orquestador debe bloquear la delegación. No debe solicitar al usuario una línea literal para reparar un snapshot interno. Esta comprobación es contractual y no presupone un hook de runtime.
 
 ## Contexto incremental
 
@@ -408,9 +425,10 @@ Antes de entregar el paquete, el orquestador debe comprobar que:
 - las dependencias que condicionan la tarea están incluidas;
 - los criterios de aceptación son verificables;
 - las validaciones necesarias están indicadas;
-- si el contexto origen contiene una declaración OpenSpec válida, el paquete conserva exactamente una línea independiente `OpenSpec change: <change-id>` con el mismo ID textual, sin omitirla, alterarla, normalizarla ni duplicarla;
-- si no existe una declaración válida, no se inserta ni se infiere ninguna línea o ID; las menciones incidentales, backticks, plantillas y textos inline no cuentan como declaraciones;
-- no hay IDs vacíos o placeholder, declaraciones inline que sustituyan la línea ni declaraciones múltiples o contradictorias; si los hay, el paquete es inválido y la delegación se bloquea;
+- si el contexto origen es una solicitud directa, el paquete conserva exactamente una línea independiente con el mismo ID real, sin omitirla, alterarla, normalizarla ni duplicarla;
+- si el contexto origen es un snapshot heredado, el paquete conserva en `Repository Context` y `Dependencies` el `change-id` real y la evidencia CLI disponible, sin exigir ni inventar una declaración textual;
+- si no existe una fuente OpenSpec válida, no se inserta ni se infiere ninguna línea o ID; las menciones incidentales, backticks, plantillas y textos inline no cuentan como declaraciones;
+- si aparecen ambos canales, sus IDs coinciden exactamente; no hay IDs vacíos o placeholder, declaraciones inline que sustituyan la línea, snapshot sin evidencia, snapshot obsoleto ni declaraciones múltiples o contradictorias; si los hay, el paquete es inválido y la delegación se bloquea sin pedir al usuario que complete la plantilla;
 - no se han copiado informes ni conversaciones completas;
 - no se ha omitido una restricción o riesgo relevante.
 

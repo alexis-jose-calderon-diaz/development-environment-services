@@ -1,9 +1,16 @@
-# Reglas globales
+# Reglas del toolkit
 
 - Responde siempre en español.
 - Mantén nombres de clases, métodos, propiedades, APIs, comandos y términos técnicos en su idioma original cuando corresponda.
 - Genera explicaciones, análisis, planes, resúmenes y mensajes para el usuario en español.
 - Si el código existente utiliza nombres en inglés, conserva esa convención.
+
+## Activación de OpenSpec
+
+- **Directa:** una solicitud independiente activa OpenSpec únicamente cuando contiene una sola línea independiente, sin prefijos ni texto adicional, `OpenSpec change: <change-id>` con un ID real. La notación entre `<` y `>` es metasyntax documental; nunca es un ID operativo ni una plantilla que se deba pedir al usuario completar.
+- **Heredada:** un workflow que ya resolvió el cambio mediante el CLI puede delegar un snapshot validado con el `change-id` real y el contexto contractual suficiente (`schemaName`, `changeRoot`, `planningHome`, `actionContext` y el estado o las rutas emitidos por `status` e `instructions`, cuando estén disponibles). El receptor revalida ese contexto mediante el CLI y no solicita una declaración textual redundante.
+- **Genérica:** solo una tarea verdaderamente genérica, sin declaración directa ni snapshot heredado válido, sigue el flujo genérico y no se activa OpenSpec por una mención incidental o un nombre aislado. Si la solicitud o delegación declara trabajo OpenSpec pero carece de un canal válido, se bloquea.
+- Si aparecen ambos canales, sus IDs deben coincidir exactamente. Un ID ausente, ambiguo, placeholder, obsoleto, contradictorio o no confirmable por el CLI, una declaración duplicada o un snapshot insuficiente bloquean e informan al orquestador; no se infiere un cambio desde una branch, ruta o artifact y no se pide al usuario reparar una delegación interna.
 
 ## OpenCode Toolkit
 
@@ -12,7 +19,7 @@
 - `commands/`: workflows invocables con sus propios templates y argumentos.
 - `skills/`: capacidades y contratos reutilizables para tareas específicas.
 - `agents/`: roles especializados con instrucciones, permisos y contratos de trabajo.
-- `AGENTS.md`: reglas globales de comportamiento, coordinación y transferencia de contexto.
+- `AGENTS.md`: reglas comunes de comportamiento, coordinación y transferencia de contexto.
 
 El orquestador debe interpretar estos recursos como piezas relacionadas cuando una tarea afecte al toolkit, respetando siempre el contrato específico de cada command, skill o agent. `delegation-context` define únicamente la transferencia de contexto y no sustituye las reglas de orquestación de este archivo.
 
@@ -26,12 +33,13 @@ El orquestador debe interpretar estos recursos como piezas relacionadas cuando u
 
 ## Bootstrap de cambios OpenSpec
 
-- Una tarea es OpenSpec únicamente cuando la solicitud operativa contiene una sola línea inequívoca `OpenSpec change: <change-id>` con un ID no vacío y no placeholder. Una plantilla o ejemplo no cuenta; no infieras el ID desde ramas, rutas ni artifacts.
-- Si la tarea pide trabajo OpenSpec y falta esa línea, el ID es ambiguo o hay IDs contradictorios, detén el trabajo y reporta el error. Si no hay declaración, trata la tarea como genérica y no cargues el bootstrap.
-- Para una tarea declarada, carga la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) antes de cualquier inspección, edición, revisión o validación. Sigue su resolución por CLI, su protocolo fail-closed y su distinción entre artifacts requeridos y opcionales.
-- Toda delegación posterior debe incluir explícitamente la misma línea `OpenSpec change: <change-id>`. El orquestador debe incluir además la responsabilidad y `Scope`, `Out of Scope` y solo el subconjunto contractual relevante; debe remitir al bootstrap para leer artifacts mediante las rutas del CLI, no copiar su contenido.
+- Una solicitud directa es OpenSpec únicamente cuando contiene una sola línea independiente e inequívoca `OpenSpec change: <change-id>` con un ID no vacío y no placeholder. La plantilla es metasyntax de documentación y no debe emitirse como valor ni solicitarse al usuario.
+- Una delegación de un workflow ya resuelto también puede activar el bootstrap con un snapshot heredado que transporte el `change-id` real y el contexto CLI validado. No exijas una línea textual redundante cuando ese snapshot esté disponible.
+- Si la tarea es verdaderamente genérica y faltan ambos canales, no cargues el bootstrap. Si la solicitud o delegación declara trabajo OpenSpec y falta un canal válido, o si el snapshot o la declaración son ambiguos, contradictorios, placeholder, obsoletos o no pueden confirmarse mediante el CLI, detén el trabajo, informa al orquestador y no infieras el cambio desde una branch, ruta o artifact aislado.
+- Para una tarea activada por cualquiera de las dos fuentes válidas, carga la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) antes de cualquier inspección, edición, revisión o validación. Sigue su resolución por CLI, su protocolo fail-closed y su distinción entre artifacts requeridos y opcionales.
+- Toda delegación posterior debe conservar el `change-id` real y transportar el snapshot heredado mediante las secciones de `delegation-context`; si también incluye una declaración textual, debe ser la misma y coincidir exactamente. El orquestador debe incluir además la responsabilidad y `Scope`, `Out of Scope` y solo el subconjunto contractual relevante; debe remitir al bootstrap para leer artifacts mediante las rutas del CLI, no copiar su contenido.
 - `delegation-context` conserva su función exclusiva de transportar y comprimir el paquete en sus secciones existentes. El bootstrap descubre, lee y deriva el snapshot; no reemplaza `delegation-context`, la división, el paralelismo ni el contexto incremental.
-- En una tarea OpenSpec declarada, `analyzer` consume el snapshot para evaluar impacto; `planner` para fijar tareas, dependencias y gates; `implementer` para implementar contra el contrato; `reviewer` para revisar contra requisitos y criterios; e `integration-checker` para comprobar fronteras, consumidores, artifacts y validaciones. Cada rol carga el bootstrap antes de actuar; una tarea genérica conserva su flujo sin activarlo.
+- En una tarea OpenSpec directa o heredada, `analyzer` consume el snapshot para evaluar impacto; `planner` para fijar tareas, dependencias y gates; `implementer` para implementar contra el contrato; `reviewer` para revisar contra requisitos y criterios; e `integration-checker` para comprobar fronteras, contratos, artifacts y validaciones. Cada rol aplicable carga el bootstrap antes de actuar; `reviewer` siempre exige contexto OpenSpec válido y no admite revisión genérica, mientras los demás roles conservan su flujo genérico cuando corresponda.
 - Las instrucciones y artifacts OpenSpec son autoritativos sobre el código. Las contradicciones son hallazgos o bloqueos; no se editan artifacts salvo autorización explícita que identifique artifact y operación. Las validaciones solo se reutilizan con el mismo change-id, contexto/estado suficientemente reciente y superficie aplicable; en otro caso se repiten de forma focalizada o se marcan no verificadas.
 
 ## Estrategia de orquestación de tareas
@@ -68,18 +76,18 @@ Estas reglas son transversales y aplican a cualquier proyecto, lenguaje o tipo d
 - No crees una subtarea posterior solo para repetir una validación o completar una prueba que formaba parte de los criterios de aceptación de una unidad. Crea una subtarea correctiva únicamente cuando exista un hallazgo nuevo, una dependencia descubierta o un cambio de alcance.
 - Espera a que terminen todas las unidades planificadas antes de ejecutar la verificación de integración. `integration-checker` debe consolidar en un único informe los problemas de backend, contratos, clientes generados, frontend, persistencia y pruebas.
 - Si la integración encuentra problemas, `integration-checker` debe agrupar y aplicar las correcciones compatibles dentro de la superficie afectada. Solo escala al responsable original o al agente principal los problemas que requieran una decisión, estén fuera del alcance o no puedan corregirse de forma segura. Evita crear una nueva sesión por cada problema aislado.
-- Tras las correcciones agrupadas de integración, ejecuta validaciones focalizadas sobre las fronteras afectadas; no repitas la exploración global ni la suite completa sin una razón concreta.
+- Tras las correcciones agrupadas de integración, ejecuta validaciones focalizadas sobre las fronteras afectadas; no repitas la exploración amplia ni la suite completa sin una razón concreta.
 - `integration-checker` es el gate de integración y puede editar la superficie afectada. No devuelvas al `implementer` un problema que el checker pueda corregir directamente; después de corregir, debe validar de nuevo las áreas afectadas.
 - No reejecutes automáticamente `integration-checker` después de sus propias correcciones. Reejecútalo solo si una corrección modifica otra frontera o contrato, introduce un riesgo alto, deja pruebas insuficientes o requiere comprobar una dependencia nueva.
-- `implementer` debe ejecutar validaciones focalizadas de su unidad, comprobar el resultado y reportar sus resultados. Las suites globales y las validaciones transversales deben concentrarse en la fase de integración y no repetirse innecesariamente en cada subtarea.
-- Transfiere al siguiente agente la matriz, los resúmenes y los hallazgos relevantes; no le pidas repetir una exploración global que ya fue resuelta.
+- `implementer` debe ejecutar validaciones focalizadas de su unidad, comprobar el resultado y reportar sus resultados. Las suites completas y las validaciones transversales deben concentrarse en la fase de integración y no repetirse innecesariamente en cada subtarea.
+- Transfiere al siguiente agente la matriz, los resúmenes y los hallazgos relevantes; no le pidas repetir una exploración amplia que ya fue resuelta.
 
 ## Evaluación previa de complejidad
 
 Antes de dividir una tarea grande en subagentes y decidir cuántos utilizar y cómo distribuir el trabajo:
 
-- Para toda tarea grande o no trivial que pueda requerir división, el agente principal debe invocar primero al subagente global `analyzer` para conocer el estado actual, la superficie y el impacto del cambio.
-- Después de recibir el `Analysis Report`, el agente principal debe invocar al subagente global `planner` para separar el análisis de la planificación y diseñar el alcance, las unidades, las dependencias y el orden de ejecución.
+- Para toda tarea grande o no trivial que pueda requerir división, el agente principal debe invocar primero al subagente `analyzer` para conocer el estado actual, la superficie y el impacto del cambio.
+- Después de recibir el `Analysis Report`, el agente principal debe invocar al subagente `planner` para separar el análisis de la planificación y diseñar el alcance, las unidades, las dependencias y el orden de ejecución.
 - El agente principal decide, a partir del análisis y del plan, si necesita delegar, cuántos agentes utilizar y qué unidades asignarles.
 - Las tareas cotidianas o triviales no necesitan invocar `analyzer` ni `planner`; el agente principal puede resolverlas directamente cuando no exista una necesidad real de planificación.
 - `analyzer` se encarga de la inspección inicial, la estimación de superficie, impacto y riesgos, y de recomendar a alto nivel el nivel general de paralelización y la cantidad necesaria de subagentes según la cohesión e independencia de la superficie; no debe descomponer unidades concretas, asignar agentes, construir el grafo de dependencias, fijar el orden exacto de ejecución, describir pasos concretos de código ni crear el plan detallado, editar o delegar.
@@ -138,7 +146,7 @@ Cuando un archivo sea especialmente grande:
 1. Identifica primero las secciones relevantes.
 2. Evita cargar el archivo completo si las herramientas de búsqueda permiten localizar el área necesaria.
 3. Considera una subtarea de análisis específica.
-4. Entrega al siguiente agente únicamente las ubicaciones y conclusiones necesarias.
+4. Entrega al siguiente agente únicamente las referencias y conclusiones necesarias.
 
 ```text
 analysis-large-file
@@ -187,7 +195,7 @@ Para tareas grandes utiliza preferentemente este flujo:
 ```
 
 - Durante el análisis inicial, evita una exploración profunda y mantén la investigación acotada a la superficie e impacto del cambio.
-- Durante la planificación, evita repetir el análisis global y usa únicamente inspecciones dirigidas para cerrar dependencias críticas.
+- Durante la planificación, evita repetir el análisis amplio y usa únicamente inspecciones dirigidas para cerrar dependencias críticas.
 - Durante la planificación, define explícitamente la propiedad de los archivos, los criterios de aceptación, los casos límite y las validaciones de cada unidad antes de iniciar la ejecución.
 - Durante la integración, comprueba todas las fronteras afectadas en conjunto y consolida los problemas antes de solicitar correcciones.
 - Después de la integración y de las correcciones agrupadas, ejecuta una validación focalizada sobre las áreas afectadas. No conviertas esta fase en una cadena de comprobaciones parciales salvo por un riesgo concreto.
@@ -215,7 +223,7 @@ Solo después de responder estas preguntas debe decidir cuántos subagentes crea
 - Las sesiones hijas no deben convertirse en conversaciones permanentes ni conservar contexto que ya no sea necesario.
 - Cuando una subtarea nueva no necesite el contexto interno de una sesión anterior, iníciala en una sesión nueva.
 - Transfiere información entre agentes mediante resúmenes y resultados accionables, no mediante historiales completos.
-- La sesión principal debe conservar principalmente el objetivo global, el plan, las dependencias, las decisiones arquitectónicas, el estado de las subtareas, los resultados resumidos y los bloqueos.
+- La sesión principal debe conservar principalmente el objetivo de la tarea, el plan, las dependencias, las decisiones arquitectónicas, el estado de las subtareas, los resultados resumidos y los bloqueos.
 - La sesión principal debe evitar la exploración exhaustiva, leer repetidamente los mismos archivos, implementar personalmente todas las subtareas y copiar respuestas completas de los subagentes.
 - Considera la compactación de contexto un mecanismo de respaldo, no el flujo normal de trabajo. Prioriza la delegación, el contexto mínimo y los resúmenes antes de depender de ella.
 

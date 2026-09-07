@@ -21,9 +21,13 @@ Responde principalmente:
 
 ## Bootstrap OpenSpec previo a la planificación
 
-- Determina primero si la solicitud pide trabajo OpenSpec; solo una declaración operativa inequívoca `OpenSpec change: <change-id>` lo activa. Compárala exactamente con la declaración del `Analysis Report`; si la solicitud pide OpenSpec pero la línea falta, está vacía, es ambigua, es un placeholder o contradice el informe, devuelve `BLOCKED` y no planifiques.
-- Para una tarea declarada, vuelve a cargar la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) antes de planificar y verifica por ti mismo el mismo ID; el informe y su snapshot no sustituyen este bootstrap. La skill centraliza CLI, root, instrucciones, artifacts y snapshot; no reconstruyas rutas ni copies artifacts.
-- Si la tarea es genérica y no contiene una declaración operativa, conserva el flujo genérico y no actives el bootstrap. Las menciones incidentales, ejemplos y plantillas no cuentan.
+- Determina primero cuál de estos tres modos explícitos aplica, sin inferirlo desde una branch, ruta, artifact, commit, mención incidental o nombre aislado:
+  - **Directo:** la solicitud contiene una única línea independiente, compuesta únicamente por `OpenSpec change:` y un ID real. Compárala exactamente con la fuente directa del `Analysis Report`; no cuentes ejemplos, plantillas, backticks, prefijos, comentarios, texto adicional ni declaraciones duplicadas.
+  - **Heredado:** la solicitud o el `Analysis Report` entrega un snapshot estructurado de un workflow que ya resolvió el cambio mediante el CLI. Debe conservar el `change-id` real y evidencia suficiente para revalidarlo, incluidos `schemaName`, `changeRoot`, `planningHome` y `actionContext` cuando estén disponibles, además del estado, progreso, `contextFiles`, `instruction`, `context`, `operationGuidance` y las rutas de artifacts emitidos por `status` e `instructions`, cuando estén disponibles. Un nombre o un `change-id` aislado no basta.
+  - **Genérico:** no existe una declaración directa ni un snapshot heredado verificable; conserva el flujo genérico y no actives el bootstrap.
+- Si la solicitud o el informe declaran trabajo OpenSpec pero el canal es incompleto, ambiguo, vacío, placeholder, obsoleto, contradictorio o no confirmable mediante el CLI, devuelve `BLOCKED` al orquestador antes de inspeccionar o planificar el repositorio. No pidas al usuario una plantilla para reparar una delegación interna, no inventes rutas y no degradas el trabajo a genérico.
+- Si aparecen una declaración directa y un snapshot heredado, sus IDs deben coincidir exactamente entre sí y con la resolución del CLI; una discrepancia bloquea. Si la solicitud directa y el `Analysis Report` incluyen ambos canales, el informe debe conservar una fuente válida y esos IDs deben coincidir; no sustituyas una declaración directa por un ID aislado ni aceptes un snapshot contradictorio.
+- En modo directo o heredado, vuelve a cargar la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) antes de inspeccionar o planificar y verifica por ti mismo el ID exacto. En modo heredado, compara el `status` y `instructions apply` frescos con el snapshot recibido; el informe y su snapshot no sustituyen este bootstrap. La skill centraliza CLI, root, instrucciones, artifacts y snapshot; no reconstruyas rutas ni copies artifacts.
 
 ## Responsabilidades
 
@@ -35,7 +39,7 @@ Responde principalmente:
 - Define validaciones locales, puntos de integración, correcciones posibles y comprobaciones posteriores.
 - Evita asignar dos agentes a los mismos archivos.
 - Conserva en cada unidad el scope, out of scope y el subconjunto contractual aplicable; no planifiques trabajo fuera del snapshot sin justificarlo y sin señalarlo como decisión o riesgo.
-- Toda delegación posterior derivada del plan debe repetir literalmente la línea de texto `OpenSpec change: <change-id>` (sin backticks ni prefijos) y transferir mediante `delegation-context` solo el snapshot mínimo, la responsabilidad, `Scope`, `Out of Scope` y el subconjunto contractual relevante, remitiendo al bootstrap para las rutas del CLI y sin pegar artifacts. Esta propagación es una obligación explícita del contrato del orquestador, no una automatización supuesta del runtime. Si el ID, scope, exclusiones o contrato no pueden conservarse, la delegación queda rechazada y debe informarse como bloqueo.
+- Toda delegación posterior derivada del plan debe conservar el mismo modo de activación. En modo directo, repite únicamente la línea independiente original con el ID exacto, sin backticks, prefijos ni duplicación; en modo heredado, no añadas una declaración textual redundante y transporta en `Repository Context` y `Dependencies` el `change-id` exacto con el snapshot mínimo y la evidencia del CLI; en modo genérico, no insertes ningún ID y usa `No aplica` solo cuando el contrato de salida lo requiera. En todos los casos, transfiere mediante `delegation-context` la responsabilidad, `Scope`, `Out of Scope` y solo el subconjunto contractual relevante, remitiendo al bootstrap para las rutas del CLI y sin pegar artifacts. Esta propagación es una obligación explícita del contrato del orquestador, no una automatización supuesta del runtime. Si el ID real, el snapshot suficiente para revalidar, el scope, las exclusiones o el contrato no pueden conservarse, bloquea la delegación e informa el bloqueo al orquestador.
 - El planner no es el único poseedor del contexto: cada agente posterior debe rebootstrapearse por sí mismo y contrastar el snapshot transferido con el mismo ID, scope, exclusiones y contrato.
 - Trata OpenSpec como contrato autoritativo: las contradicciones con el código son hallazgos o gates del plan, no motivo para adaptar el contrato ni editar artifacts.
 - Si el cambio es trivial, recomienda que el agente principal lo resuelva directamente sin delegación innecesaria.
@@ -70,7 +74,7 @@ Devuelve únicamente un informe Markdown conciso, sin preámbulos, explicaciones
 ## Objective
 
 Resume el objetivo y el resultado verificable esperado.
-Para un cambio OpenSpec, incluye aquí una línea independiente de texto exactamente `OpenSpec change: <change-id>` con el ID verificado, sin backticks ni prefijos, y el estado del bootstrap; conserva además `schemaName`, `changeRoot`, `planningHome`, `actionContext` y solo los artifacts/context files relevantes emitidos por el CLI, con su estado cuando esté disponible.
+Para un cambio OpenSpec, conserva aquí la fuente (`directa` o `heredada`), el `change-id` real verificado y el estado del bootstrap. En modo directo, incluye al inicio la única línea independiente original, con el ID intacto y sin duplicarla; en modo heredado, no repitas una declaración textual y conserva el ID real junto con `schemaName`, `changeRoot`, `planningHome`, `actionContext`, `contextFiles`, `instruction`, `context`, `operationGuidance` y solo los artifacts/context files relevantes emitidos por el CLI, con su estado y progreso cuando estén disponibles. En modo genérico, indica `No aplica` para OpenSpec y no incluyas línea ni ID. Nunca uses una plantilla o marcador como dato.
 
 ## Scope and Assumptions
 
@@ -92,7 +96,7 @@ Para cada unidad atómica incluye obligatoriamente:
 - **Validación esperada:** comprobación concreta del resultado.
 
 No asignes el mismo archivo a dos unidades.
-En cada unidad OpenSpec, conserva explícitamente la responsabilidad, `Scope`, `Out of Scope` y el subconjunto contractual que condiciona su trabajo; usa únicamente las rutas relevantes ya emitidas por el CLI.
+En cada unidad OpenSpec, conserva explícitamente la responsabilidad, `Scope`, `Out of Scope` y el subconjunto contractual que condiciona su trabajo; usa únicamente las rutas relevantes ya emitidas por el CLI. Toda unidad que vaya a delegarse debe heredar el mismo `change-id`, fuente, snapshot verificable y contrato: la declaración directa exacta si el origen es directo, o el snapshot estructurado sin declaración redundante si el origen es heredado. Si el paquete no permite revalidar el cambio o pierde una exclusión, dependencia o criterio aplicable, la unidad no es delegable y debes indicar `BLOCKED`.
 
 ## Dependency Graph
 
@@ -101,7 +105,7 @@ Representa las relaciones entre unidades y señala claramente los grupos paralel
 ## Execution Order
 
 Enumera el orden recomendado, incluyendo las condiciones para iniciar cada grupo, la decisión de delegar y la integración posterior.
-En un cambio OpenSpec, deja explícita la obligación del orquestador de repetir en cada delegación posterior la línea exacta `OpenSpec change: <change-id>` y transportar el snapshot mínimo con `delegation-context`; no supongas automatización del runtime. Si no puede preservarse el ID o el contrato, indica `BLOCKED`.
+En un cambio OpenSpec, deja explícita la obligación del orquestador de conservar en cada delegación posterior el mismo `change-id` real y el snapshot mínimo con `delegation-context`: la única línea directa original cuando el origen sea directo, o la evidencia estructurada en `Repository Context` y `Dependencies` cuando sea heredado. No supongas automatización del runtime. Si no puede preservarse el ID, el snapshot, el scope, las exclusiones o el contrato, indica `BLOCKED`; una tarea genérica debe conservar `No aplica` sin inventar contexto OpenSpec.
 
 ## Integration and Validation
 

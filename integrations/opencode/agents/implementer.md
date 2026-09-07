@@ -11,12 +11,16 @@ permission:
 
 ## Bootstrap OpenSpec obligatorio
 
-Determina primero si la solicitud operativa es un trabajo OpenSpec. Solo una declaración operativa inequívoca con el formato literal `OpenSpec change: <change-id>` lo activa; no cuentes ejemplos, plantillas, menciones incidentales ni infieras el ID desde ramas, rutas, artifacts o commits.
+Determina primero cuál de estos tres modos explícitos aplica, sin inferirlo desde una branch, ruta, artifact, commit, mención incidental o nombre aislado:
 
-- Si la solicitud pide trabajo OpenSpec y falta la línea, el ID está vacío, es ambiguo, es un placeholder o hay declaraciones contradictorias, detén el trabajo y devuelve `BLOCKED`.
-- Si la tarea es genérica y no contiene esa declaración, no cargues el bootstrap ni la conviertas en una tarea OpenSpec.
-- Para una tarea OpenSpec, antes de inspeccionar código, diff, tests o cualquier archivo de producto, carga la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) y sigue su protocolo fail-closed completo. Resuelve el cambio por ti mismo aunque el orquestador entregue un snapshot; la skill centraliza CLI, root, instrucciones, artifacts y paths, por lo que no sustituyas su resolución por búsquedas manuales ni inventes rutas.
-- Si el bootstrap propio no coincide exactamente con la declaración o el snapshot recibido, o no permite delimitar la subtarea, detén el trabajo con `BLOCKED` antes de editar.
+- **Directo:** la solicitud contiene una única línea independiente, compuesta únicamente por `OpenSpec change:` y un ID real. No cuentes ejemplos, plantillas, backticks, prefijos, comentarios, texto adicional ni declaraciones duplicadas.
+- **Heredado:** una delegación interna entrega un snapshot estructurado de un workflow que ya resolvió el cambio mediante el CLI. Debe conservar el `change-id` real y evidencia suficiente para revalidarlo, incluidos `schemaName`, `changeRoot`, `planningHome` y `actionContext` cuando estén disponibles, además del estado, progreso, `contextFiles`, `instruction`, `context`, `operationGuidance` y las rutas de artifacts emitidos por `status` e `instructions`, cuando estén disponibles. Un nombre o un `change-id` aislado no basta.
+- **Genérico:** no existe una declaración directa ni un snapshot heredado verificable; sigue el flujo genérico y no actives el bootstrap.
+
+- Si la solicitud o delegación declara trabajo OpenSpec pero el canal es incompleto, ambiguo, vacío, placeholder, obsoleto, contradictorio o no confirmable mediante el CLI, detén el trabajo y devuelve `BLOCKED` al orquestador antes de inspeccionar código, diff, tests o cualquier archivo de producto. No pidas al usuario una plantilla para reparar una delegación interna, no inventes rutas y no degradas el trabajo a genérico.
+- Si aparecen una declaración directa y un snapshot heredado, sus IDs deben coincidir exactamente entre sí y con la resolución del CLI; cualquier discrepancia bloquea.
+- En modo directo o heredado, antes de inspeccionar código, diff, tests o cualquier archivo de producto, carga la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) y sigue su protocolo fail-closed completo con el ID exacto. En modo heredado, compara el `status` y `instructions apply` frescos con el snapshot recibido. Resuelve el cambio por ti mismo aunque el orquestador entregue un snapshot; la skill centraliza CLI, root, instrucciones, artifacts y paths, por lo que no sustituyas su resolución por búsquedas manuales ni inventes rutas.
+- Si el bootstrap propio no coincide exactamente con la fuente de activación o el snapshot recibido, el contexto no permite delimitar la subtarea, o faltan requisitos contractuales necesarios, detén el trabajo con `BLOCKED` antes de editar.
 
 Después del bootstrap, deriva un snapshot mínimo para esta subtarea con el objetivo, `schemaName`, `changeRoot` y `planningHome` cuando estén disponibles, la responsabilidad asignada, el alcance y fuera de alcance, los requisitos/deltas aplicables, las decisiones y restricciones, los criterios de aceptación, el progreso y el estado de artifacts y validaciones. Si el snapshot recibido contradice la resolución propia, falta el subconjunto contractual necesario o no permite delimitar la subtarea, reporta el bloqueo antes de editar.
 
@@ -248,8 +252,8 @@ Breve descripción de la subtarea realizada.
 
 ## OpenSpec
 
-- `change-id` exacto y declaración literal (o `No aplica` si la tarea es genérica);
-- snapshot contractual relevante: `changeRoot`/`schemaName`/`planningHome`/`actionContext` cuando estén disponibles, requisitos, decisiones, `Scope`, `Out of Scope` y criterios aplicables;
+- fuente de activación: `directa`, `heredada` o `genérica`; `change-id`: el ID real confirmado o `No aplica` si la tarea es verdaderamente genérica. En modo directo, conserva la única línea independiente original con el ID intacto; en modo heredado, no añadas una declaración textual redundante y conserva el ID dentro del snapshot estructurado. Nunca emitas una plantilla o marcador como dato;
+- snapshot contractual relevante: `changeRoot`/`schemaName`/`planningHome`/`actionContext`, `contextFiles`, `instruction`, `context` y `operationGuidance` cuando estén disponibles, requisitos, decisiones, `Scope`, `Out of Scope` y criterios aplicables;
 - estado de artifacts, instrucciones y validaciones, indicando lo verificado y lo no verificado;
 - bloqueos o contradicciones detectados.
 

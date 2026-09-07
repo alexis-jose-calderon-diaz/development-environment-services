@@ -7,8 +7,10 @@
 
 ## Superficies
 
-- `services/` es un entorno Docker Compose independiente de los proyectos consumidores; `integrations/opencode/` es solo el respaldo versionado de la configuración global.
-- `.opencode/` y `openspec/` contienen el workflow OpenSpec local del repositorio; no los mezcles con `integrations/opencode/` ni los uses como origen de la instalación global.
+- Las reglas de este `AGENTS.md` son locales a `development-environment-services`; no sustituyen las reglas de un proyecto consumidor ni la guía global instalada de OpenCode.
+- En el proyecto anfitrión, `AGENTS.md` y `.opencode/` son superficies locales. `.opencode/` contiene los workflows y comandos locales de OpenSpec; no lo mezcles con `integrations/opencode/` ni lo uses como origen de la instalación global.
+- `services/` es un entorno Docker Compose independiente de los proyectos consumidores; `integrations/opencode/` es el respaldo versionado y separado de la configuración global reutilizable.
+- `openspec/` contiene los artifacts del workflow OpenSpec local de este repositorio y también queda separado de `integrations/opencode/`.
 - Antes de modificar `integrations/opencode/`, lee `integrations/opencode/AGENTS.md`; esa guía contiene sus reglas específicas y no debe duplicarse aquí.
 
 ## Entorno Docker
@@ -22,12 +24,14 @@
 ## OpenSpec
 
 - Para resolver el contexto y el estado local, ejecuta `openspec context --json` y `openspec list --json`; valida las especificaciones con `openspec validate --specs`.
-- Trata una solicitud como OpenSpec solo si contiene una única línea operativa `OpenSpec change: <change-id>` con un ID real; no infieras el ID desde ramas, rutas ni artifacts.
+- En una solicitud directa, trata el trabajo como OpenSpec solo si contiene una única línea independiente, sin prefijos ni texto adicional, `OpenSpec change: <change-id>` con un ID real. La forma `<change-id>` es metasyntax documental, no un valor que deba completarse o enviarse literalmente; no infieras el ID desde ramas, rutas ni artifacts.
+- Si un workflow OpenSpec ya resolvió el cambio mediante el CLI, una delegación puede entregar un snapshot heredado validado con el `change-id` real y su contexto contractual (`schemaName`, `changeRoot`, `planningHome`, `actionContext` y el estado, rutas, `contextFiles` o instrucciones emitidos cuando correspondan). El agente receptor debe reutilizar ese contexto sin exigir una declaración textual redundante al usuario y volver a comprobarlo mediante el CLI.
+- Si llegan una declaración directa y un snapshot heredado, sus IDs deben coincidir exactamente. Un canal ausente, ambiguo, placeholder, obsoleto, contradictorio o no confirmable bloquea e informa al orquestador; no se repara pidiendo al usuario la plantilla ni se degrada silenciosamente a una tarea genérica cuando el contexto declara OpenSpec. Solo una tarea verdaderamente genérica sin declaración ni snapshot OpenSpec conserva el flujo genérico.
 - Los artifacts archivados en `openspec/changes/archive/` son históricos; no los uses como fuente de comandos o rutas actuales.
 
 ## Integración global
 
-- La instalación global se copia manualmente desde `integrations/opencode/` a `~/.config/opencode/`; compara ambas ubicaciones antes de sobrescribir y reinicia OpenCode tras cambiar la configuración instalada.
+- La instalación global se copia manualmente desde el respaldo separado `integrations/opencode/` a `~/.config/opencode/`; compara ambas ubicaciones antes de sobrescribir y reinicia OpenCode tras cambiar la configuración instalada. `.opencode/` permanece como superficie local y no forma parte de este procedimiento.
 
 ## Validación
 
