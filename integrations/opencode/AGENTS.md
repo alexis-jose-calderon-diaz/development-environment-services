@@ -1,250 +1,95 @@
-# Reglas del toolkit
+# Guía compartida del toolkit
 
-- Responde siempre en español.
-- Mantén nombres de clases, métodos, propiedades, APIs, comandos y términos técnicos en su idioma original cuando corresponda.
-- Genera explicaciones, análisis, planes, resúmenes y mensajes para el usuario en español.
-- Si el código existente utiliza nombres en inglés, conserva esa convención.
+Estas reglas se aplican únicamente a los recursos incluidos en el scope que las contiene. No asumen una ruta, ubicación, instalación operativa, política global ni repositorio consumidor concreto.
 
-## Activación de OpenSpec
+## Idioma y convenciones
 
-- **Directa:** una solicitud independiente activa OpenSpec únicamente cuando contiene una sola línea independiente, sin prefijos ni texto adicional, `OpenSpec change: <change-id>` con un ID real. La notación entre `<` y `>` es metasyntax documental; nunca es un ID operativo ni una plantilla que se deba pedir al usuario completar.
-- **Heredada:** un workflow que ya resolvió el cambio mediante el CLI puede delegar un snapshot validado con el `change-id` real y el contexto contractual suficiente (`schemaName`, `changeRoot`, `planningHome`, `actionContext` y el estado o las rutas emitidos por `status` e `instructions`, cuando estén disponibles). El receptor revalida ese contexto mediante el CLI y no solicita una declaración textual redundante.
-- **Genérica:** solo una tarea verdaderamente genérica, sin declaración directa ni snapshot heredado válido, sigue el flujo genérico y no se activa OpenSpec por una mención incidental o un nombre aislado. Si la solicitud o delegación declara trabajo OpenSpec pero carece de un canal válido, se bloquea.
-- Si aparecen ambos canales, sus IDs deben coincidir exactamente. Un ID ausente, ambiguo, placeholder, obsoleto, contradictorio o no confirmable por el CLI, una declaración duplicada o un snapshot insuficiente bloquean e informan al orquestador; no se infiere un cambio desde una branch, ruta o artifact y no se pide al usuario reparar una delegación interna.
+- Responde en español, salvo que el usuario solicite otro idioma.
+- Conserva en su idioma original los nombres de clases, métodos, propiedades, APIs, comandos y términos técnicos cuando corresponda.
+- Mantén las convenciones de nombres que ya use el código existente.
+- Explica de forma directa los objetivos, decisiones, cambios, validaciones y riesgos.
 
-## OpenCode Toolkit
+## Herramientas y uso prudente del entorno
 
-`commands/`, `skills/`, `agents/` y este `AGENTS.md` forman un toolkit coherente de configuración y extensiones de OpenCode. La relación entre ellos es explícita en esta sección, no depende de que compartan un prefijo en sus nombres.
+- Para buscar texto o símbolos, usa herramientas orientadas a búsqueda como `rg` en lugar de recorrer archivos manualmente.
+- Para descubrir archivos, usa herramientas de listado como `fd` en lugar de búsquedas recursivas no acotadas.
+- Para procesar JSON o YAML, usa `jq`, `yq` u otra salida estructurada en lugar de parsear texto destinado a personas.
+- Para Git, prefiere comandos no interactivos como `git status`, `git diff` y `git log`; para GitHub, usa `gh` cuando cubra la operación.
+- Inspecciona el estado y las instrucciones aplicables antes de editar. Haz el cambio más pequeño que resuelva el objetivo.
+- Respeta los permisos, el alcance y las exclusiones recibidos. No modifiques archivos, configuraciones o datos fuera de la autorización.
+- No reveles secretos ni los incluyas en informes, comandos, archivos o salidas capturadas.
+- Evita comandos destructivos, operaciones irreversibles y cambios masivos salvo autorización explícita y alcance claro.
+- Usa el entorno con prudencia: valida los supuestos, limita las operaciones costosas y no confundas una salida esperada con un hecho comprobado.
 
-- `commands/`: workflows invocables con sus propios templates y argumentos.
-- `skills/`: capacidades y contratos reutilizables para tareas específicas.
-- `agents/`: roles especializados con instrucciones, permisos y contratos de trabajo.
-- `AGENTS.md`: reglas comunes de comportamiento, coordinación y transferencia de contexto.
+## Colaboración, coordinación y alcance
 
-El orquestador debe interpretar estos recursos como piezas relacionadas cuando una tarea afecte al toolkit, respetando siempre el contrato específico de cada command, skill o agent. `delegation-context` define únicamente la transferencia de contexto y no sustituye las reglas de orquestación de este archivo.
+- Trata cada solicitud como una unidad con un objetivo, un alcance y una condición de terminado claros. Una tarea ordinaria puede ejecutarse con la información recibida, sin requerir metadatos o herramientas externas que no sean necesarios.
+- La falta de datos auxiliares, capacidades opcionales o procesos externos no bloquea una tarea genérica cuando el objetivo, el alcance y los criterios recibidos bastan para actuar.
+- Divide solo el trabajo que se beneficie de unidades independientes, cohesionadas y verificables. No delegues tareas triviales por defecto.
+- Delega únicamente el trabajo necesario y entrega a cada colaborador el contexto mínimo suficiente para actuar sin reconstruir la conversación previa.
+- Ejecuta en paralelo solo unidades independientes que no compartan archivos modificables ni dependan de resultados ajenos; ejecuta en serie las que tengan dependencias reales.
+- Asigna un único responsable por archivo durante una fase de edición. Agrupa las correcciones que afecten varias fronteras antes de validarlas.
+- Mantén las correcciones dentro del alcance asignado. Si aparece una decisión fuera de alcance, informa el bloqueo en lugar de absorberlo silenciosamente.
+- Revisa los cambios contra el objetivo, las restricciones y los criterios recibidos. No declares una validación que no se haya ejecutado.
+- Conserva únicamente conclusiones, decisiones, dependencias, exclusiones y hallazgos que condicionen el siguiente paso; omite historiales irrelevantes, razonamientos repetidos e informes completos.
 
-## Preferencias de herramientas AI-friendly
+## Contexto delegado
 
-- Para buscar texto o símbolos, usa preferentemente `rg` en lugar de `grep` recursivo.
-- Para descubrir archivos, usa preferentemente `fd` en lugar de `find`.
-- Para procesar JSON o YAML, usa `jq` o `yq` en lugar de parsear texto manualmente.
-- Para conocer el estado de Git, usa `git status`, `git diff` y `git log` en lugar de interfaces TUI; para GitHub, usa `gh` en lugar de scraping o HTTP manual cuando cubra la operación.
-- Cuando una salida vaya a ser procesada automáticamente, elige la opción estructurada disponible y evita parsear texto pensado para humanos.
+El orquestador debe transportar hechos verificables, decisiones ya tomadas, dependencias, exclusiones y criterios de terminado proporcionales a la subtarea. El contexto debe permitir actuar sin recuperar la conversación anterior y debe omitir información histórica que no cambie la decisión o la implementación.
 
-## Bootstrap de cambios OpenSpec
+Usa las siguientes secciones como plantilla semántica. Todas son opcionales según la tarea; incluye `Objective`, `Scope`, `Out of Scope`, `Acceptance Criteria` y `Verification` cuando sean necesarios para delimitar y comprobar la unidad.
 
-- Una solicitud directa es OpenSpec únicamente cuando contiene una sola línea independiente e inequívoca `OpenSpec change: <change-id>` con un ID no vacío y no placeholder. La plantilla es metasyntax de documentación y no debe emitirse como valor ni solicitarse al usuario.
-- Una delegación de un workflow ya resuelto también puede activar el bootstrap con un snapshot heredado que transporte el `change-id` real y el contexto CLI validado. No exijas una línea textual redundante cuando ese snapshot esté disponible.
-- Si la tarea es verdaderamente genérica y faltan ambos canales, no cargues el bootstrap. Si la solicitud o delegación declara trabajo OpenSpec y falta un canal válido, o si el snapshot o la declaración son ambiguos, contradictorios, placeholder, obsoletos o no pueden confirmarse mediante el CLI, detén el trabajo, informa al orquestador y no infieras el cambio desde una branch, ruta o artifact aislado.
-- Para una tarea activada por cualquiera de las dos fuentes válidas, carga la skill `openspec-change-context-bootstrap` (`skills/openspec-change-context-bootstrap/SKILL.md` en este toolkit) antes de cualquier inspección, edición, revisión o validación. Sigue su resolución por CLI, su protocolo fail-closed y su distinción entre artifacts requeridos y opcionales.
-- Toda delegación posterior debe conservar el `change-id` real y transportar el snapshot heredado mediante las secciones de `delegation-context`; si también incluye una declaración textual, debe ser la misma y coincidir exactamente. El orquestador debe incluir además la responsabilidad y `Scope`, `Out of Scope` y solo el subconjunto contractual relevante; debe remitir al bootstrap para leer artifacts mediante las rutas del CLI, no copiar su contenido.
-- `delegation-context` conserva su función exclusiva de transportar y comprimir el paquete en sus secciones existentes. El bootstrap descubre, lee y deriva el snapshot; no reemplaza `delegation-context`, la división, el paralelismo ni el contexto incremental.
-- En una tarea OpenSpec directa o heredada, `analyzer` consume el snapshot para evaluar impacto; `planner` para fijar tareas, dependencias y gates; `implementer` para implementar contra el contrato; `reviewer` para revisar contra requisitos y criterios; e `integration-checker` para comprobar fronteras, contratos, artifacts y validaciones. Cada rol aplicable carga el bootstrap antes de actuar; `reviewer` siempre exige contexto OpenSpec válido y no admite revisión genérica, mientras los demás roles conservan su flujo genérico cuando corresponda.
-- Las instrucciones y artifacts OpenSpec son autoritativos sobre el código. Las contradicciones son hallazgos o bloqueos; no se editan artifacts salvo autorización explícita que identifique artifact y operación. Las validaciones solo se reutilizan con el mismo change-id, contexto/estado suficientemente reciente y superficie aplicable; en otro caso se repiten de forma focalizada o se marcan no verificadas.
+### Objective
 
-## Estrategia de orquestación de tareas
+Describe el resultado que debe conseguirse y la responsabilidad concreta del colaborador.
 
-Estas reglas son transversales y aplican a cualquier proyecto, lenguaje o tipo de trabajo.
+### Scope
 
-- Para tareas grandes o no triviales, el agente principal debe actuar principalmente como orquestador y delegar el trabajo en lugar de intentar resolverlo todo directamente.
-- Antes de implementar, divide el trabajo en subtareas pequeñas y cohesionadas, cada una con un único objetivo, alcance claro, pocos archivos involucrados, resultado verificable y el mínimo contexto necesario. No dividas una unidad cohesionada únicamente por tipo de archivo si el mismo agente puede resolver de forma segura su código productivo, pruebas y contrato directamente relacionado.
-- Ejecuta subtareas en paralelo únicamente cuando sean independientes, no modifiquen los mismos archivos y no dependan del resultado de otra subtarea.
-- Ejecuta subtareas en serie cuando exista una dependencia real entre ellas.
-- Prefiere subagentes especializados para exploración, análisis, implementación, pruebas e integración.
-- Cuando el trabajo ya esté dividido, asigna cada unidad al `implementer`. Debe completar el código productivo, las pruebas y los contratos directamente relacionados con su unidad, ejecutar validaciones locales, comprobar el resultado y corregir los problemas dentro de su alcance antes de informar. Después de completar todas las unidades, usa `integration-checker` para verificar la coherencia entre múltiples piezas.
-- En una tarea OpenSpec declarada, incorpora `reviewer` como revisión contractual read-only después de las implementaciones y antes de `integration-checker` cuando la superficie lo requiera; transfiere su resumen compacto mediante `delegation-context` sin delegarle correcciones.
-- Delega las investigaciones del repositorio cuando sea posible para evitar que la sesión principal lea grandes cantidades de archivos.
-- Entrega a cada subagente únicamente el contexto necesario para su unidad de trabajo.
-- Una sesión hija no debe representar una feature completa si esta puede dividirse en unidades más pequeñas, pero tampoco debe dividirse una unidad cohesionada en sesiones separadas de implementación, pruebas o contratos sin una dependencia real.
-- Cada sesión hija debe corresponder preferentemente a una unidad atómica, concreta y descartable.
-- No permitas que dos subagentes modifiquen simultáneamente los mismos archivos. Si dos subtareas afectan los mismos archivos, ejecútalas secuencialmente o asígnalas al mismo agente.
-- Si existe un plan, una especificación OpenSpec o una lista de tareas previamente definida, úsala como fuente para identificar unidades delegables.
-- Cuando el trabajo pueda modelarse como un grafo de dependencias, usa esta estrategia: tareas independientes -> paralelo; tareas dependientes -> serie; integración -> correcciones agrupadas, si son necesarias -> validación final.
-- No delegues artificialmente tareas triviales cuando la sobrecarga de crear y coordinar un subagente supere el beneficio.
-- Mantén el balance entre aislamiento de contexto, número de agentes, dependencias y riesgo de conflictos.
-- Al terminar una subtarea, conserva únicamente un resumen accionable y no toda la conversación del subagente.
-- El resultado de cada subagente debe ser conciso y utilizar preferentemente estas etiquetas: `Objetivo completado`, `Archivos consultados`, `Archivos modificados`, `Decisiones tomadas`, `Validaciones ejecutadas` y `Riesgos o pendientes`.
-- Evita devolver logs extensos, código completo innecesario, contenido de archivos sin relación directa y explicaciones repetitivas.
-- En todos los informes, planes, matrices, validaciones y resúmenes, referencia los archivos mediante rutas relativas a la raíz del proyecto o worktree, omitiendo la ruta absoluta y el prefijo de la raíz. Incluye los directorios necesarios para desambiguar, usa `/` como separador y no uses solo el nombre del archivo salvo que sea único y esté en la raíz; por ejemplo, `src/auth/services/login.ts:42`.
-- Para archivos fuera del proyecto, usa una ruta relativa con `../` cuando sea posible e indica que están fuera del proyecto; evita rutas absolutas salvo que sean imprescindibles para identificar el recurso.
+Enumera los archivos, áreas, comportamientos y operaciones autorizados.
 
-## Coordinación sin duplicación
+### Out of Scope
 
-- Antes de delegar, el `planner` debe entregar una matriz de ejecución con la unidad, archivos bajo responsabilidad, archivos fuera de alcance, criterios de aceptación, casos límite, validaciones requeridas y dependencias.
-- La matriz debe garantizar que cada archivo modificable tenga un único responsable durante la fase de implementación. Si dos unidades necesitan el mismo archivo, deben ejecutarse en serie o consolidarse en una sola unidad. Cuando todas las unidades terminan, `integration-checker` puede modificar la superficie integrada como único responsable de las correcciones transversales.
-- Los criterios de aceptación deben incorporar desde el inicio los casos límite relevantes, las pruebas de contrato, autorización, concurrencia, serialización o integración que correspondan. No postergues estos casos para una ronda genérica de refuerzo si ya son conocidos.
-- No crees una subtarea posterior solo para repetir una validación o completar una prueba que formaba parte de los criterios de aceptación de una unidad. Crea una subtarea correctiva únicamente cuando exista un hallazgo nuevo, una dependencia descubierta o un cambio de alcance.
-- Espera a que terminen todas las unidades planificadas antes de ejecutar la verificación de integración. `integration-checker` debe consolidar en un único informe los problemas de backend, contratos, clientes generados, frontend, persistencia y pruebas.
-- Si la integración encuentra problemas, `integration-checker` debe agrupar y aplicar las correcciones compatibles dentro de la superficie afectada. Solo escala al responsable original o al agente principal los problemas que requieran una decisión, estén fuera del alcance o no puedan corregirse de forma segura. Evita crear una nueva sesión por cada problema aislado.
-- Tras las correcciones agrupadas de integración, ejecuta validaciones focalizadas sobre las fronteras afectadas; no repitas la exploración amplia ni la suite completa sin una razón concreta.
-- `integration-checker` es el gate de integración y puede editar la superficie afectada. No devuelvas al `implementer` un problema que el checker pueda corregir directamente; después de corregir, debe validar de nuevo las áreas afectadas.
-- No reejecutes automáticamente `integration-checker` después de sus propias correcciones. Reejecútalo solo si una corrección modifica otra frontera o contrato, introduce un riesgo alto, deja pruebas insuficientes o requiere comprobar una dependencia nueva.
-- `implementer` debe ejecutar validaciones focalizadas de su unidad, comprobar el resultado y reportar sus resultados. Las suites completas y las validaciones transversales deben concentrarse en la fase de integración y no repetirse innecesariamente en cada subtarea.
-- Transfiere al siguiente agente la matriz, los resúmenes y los hallazgos relevantes; no le pidas repetir una exploración amplia que ya fue resuelta.
+Enumera explícitamente los archivos, áreas, comportamientos y decisiones que no deben tocarse.
 
-## Evaluación previa de complejidad
+### Repository Context
 
-Antes de dividir una tarea grande en subagentes y decidir cuántos utilizar y cómo distribuir el trabajo:
+Resume solo los hechos del proyecto o del entorno que condicionan la tarea, sin asumir una ubicación, instalación o política concreta.
 
-- Para toda tarea grande o no trivial que pueda requerir división, el agente principal debe invocar primero al subagente `analyzer` para conocer el estado actual, la superficie y el impacto del cambio.
-- Después de recibir el `Analysis Report`, el agente principal debe invocar al subagente `planner` para separar el análisis de la planificación y diseñar el alcance, las unidades, las dependencias y el orden de ejecución.
-- El agente principal decide, a partir del análisis y del plan, si necesita delegar, cuántos agentes utilizar y qué unidades asignarles.
-- Las tareas cotidianas o triviales no necesitan invocar `analyzer` ni `planner`; el agente principal puede resolverlas directamente cuando no exista una necesidad real de planificación.
-- `analyzer` se encarga de la inspección inicial, la estimación de superficie, impacto y riesgos, y de recomendar a alto nivel el nivel general de paralelización y la cantidad necesaria de subagentes según la cohesión e independencia de la superficie; no debe descomponer unidades concretas, asignar agentes, construir el grafo de dependencias, fijar el orden exacto de ejecución, describir pasos concretos de código ni crear el plan detallado, editar o delegar.
-- `planner` consume el informe de `analyzer` y las restricciones del usuario para diseñar el plan de ejecución; no debe implementar, editar ni corregir una implementación ni delegar.
-- Durante el análisis, identifica los módulos, features o áreas probablemente afectadas.
-- Durante el análisis, localiza los archivos relevantes sin leerlos completamente cuando no sea necesario.
-- Durante el análisis, obtiene, cuando sea posible, la cantidad aproximada de archivos involucrados, el tamaño de cada archivo, las líneas aproximadas de código, la distribución por módulo o feature, los archivos especialmente grandes, los archivos compartidos o de alta centralidad y las dependencias entre los archivos afectados.
-- El objetivo del análisis inicial no es comprender todavía toda la implementación, sino estimar cuánto contexto será necesario para que `planner` diseñe una ejecución segura y eficiente.
+### Relevant Files
 
-## Uso de la superficie de contexto
+Lista las rutas y referencias necesarias para investigar, editar o validar; evita incluir archivos no relacionados.
 
-- Utiliza la evaluación de superficie para decidir el nivel de división.
-- No dividas únicamente por cantidad de tareas funcionales.
-- Considera también cuánto código tendría que cargar un agente para resolver cada subtarea.
-- Tres archivos pequeños y fuertemente relacionados pueden mantenerse en una sola subtarea.
-- Tres archivos muy grandes pueden requerir varias subtareas.
-- Quince archivos pequeños de una misma feature pueden ser manejables por un solo agente si comparten un contexto reducido.
-- Ocho archivos distribuidos entre backend, frontend, contratos y pruebas probablemente deben separarse.
-- Un archivo extremadamente grande puede justificar una investigación previa independiente aunque sea el único archivo afectado.
+### Existing Behavior
 
-## Criterios de división
+Explica el comportamiento actual relevante y los límites conocidos.
 
-Utiliza conjuntamente los siguientes criterios:
+### Desired Behavior
 
-- Cantidad de archivos.
-- Tamaño de los archivos.
-- Cantidad aproximada de líneas.
-- Número de módulos afectados.
-- Separación arquitectónica.
-- Dependencias entre cambios.
-- Posibilidad de paralelización.
-- Riesgo de conflictos.
-- Cantidad de contexto que deberá leer cada agente.
+Define el comportamiento o resultado esperado, incluidos los cambios observables.
 
-La métrica principal no debe ser cuántos archivos hay, sino:
+### Constraints
 
-> cuánto contexto necesita mantener simultáneamente un agente para completar correctamente su unidad de trabajo.
+Indica permisos, convenciones, compatibilidad, límites de seguridad, herramientas y validaciones obligatorias.
 
-## Presupuesto de contexto por subtarea
+### Decisions Already Made
 
-- Intenta que cada subtarea pueda resolverse leyendo únicamente una fracción pequeña y coherente del repositorio.
-- Si una subtarea requiere cargar demasiados archivos o archivos muy grandes, subdivídela nuevamente antes de ejecutarla.
-- Prefiere una subtarea con entre 3 y 8 archivos relacionados y contexto específico sobre otra con 25 archivos, múltiples módulos y contexto heterogéneo.
-- Estos números son orientativos y no límites rígidos. La cohesión del contexto tiene prioridad sobre la cantidad exacta de archivos.
+Registra decisiones que el colaborador debe respetar y no volver a debatir salvo que encuentre un conflicto verificable.
 
-```text
-Subtarea
-|-- 3-8 archivos relacionados
-`-- contexto específico
-```
+### Dependencies
 
-## Archivos grandes
+Señala resultados previos, recursos, contratos o condiciones necesarias para completar la unidad.
 
-Cuando un archivo sea especialmente grande:
+### Acceptance Criteria
 
-1. Identifica primero las secciones relevantes.
-2. Evita cargar el archivo completo si las herramientas de búsqueda permiten localizar el área necesaria.
-3. Considera una subtarea de análisis específica.
-4. Entrega al siguiente agente únicamente las referencias y conclusiones necesarias.
+Formula condiciones observables y verificables para considerar la unidad terminada, incluidos casos límite conocidos.
 
-```text
-analysis-large-file
-      |
-      v
-"Modificar líneas/secciones relacionadas con X"
-      |
-      v
-implementation
-```
+### Verification
 
-## Determinación del número de subagentes
+Indica los comandos, comprobaciones, pruebas o inspecciones que deben ejecutarse y qué resultado confirma cada una.
 
-- No establezcas previamente un número fijo de subagentes.
-- Determina el número dinámicamente después de evaluar la superficie de trabajo.
-- Busca el menor número de subagentes que permita mantener contextos pequeños, aprovechar paralelismo real, evitar duplicación de investigación, minimizar conflictos de edición y mantener claras las dependencias.
-- No crees subagentes solamente para aumentar el paralelismo.
+## Salida y validación
 
-## Fase de planificación
-
-Para tareas grandes utiliza preferentemente este flujo:
-
-```text
-1. Análisis inicial (`analyzer`)
-      |
-      v
-2. Planificación (`planner`, consumiendo el `Analysis Report`)
-      |
-      v
-3. Construcción del grafo de subtareas
-      |
-      v
-4. Identificación de tareas paralelas y secuenciales
-      |
-      v
-5. Ejecución
-      |
-      v
-6. Integración
-      |
-      v
-7. Correcciones agrupadas, si son necesarias
-      |
-      v
-8. Revisión final
-```
-
-- Durante el análisis inicial, evita una exploración profunda y mantén la investigación acotada a la superficie e impacto del cambio.
-- Durante la planificación, evita repetir el análisis amplio y usa únicamente inspecciones dirigidas para cerrar dependencias críticas.
-- Durante la planificación, define explícitamente la propiedad de los archivos, los criterios de aceptación, los casos límite y las validaciones de cada unidad antes de iniciar la ejecución.
-- Durante la integración, comprueba todas las fronteras afectadas en conjunto y consolida los problemas antes de solicitar correcciones.
-- Después de la integración y de las correcciones agrupadas, ejecuta una validación focalizada sobre las áreas afectadas. No conviertas esta fase en una cadena de comprobaciones parciales salvo por un riesgo concreto.
-- Mantén ambas fases baratas en tokens y orientadas exclusivamente a preparar una ejecución segura; la decisión final de delegar corresponde al agente principal.
-
-## Principio de decisión
-
-Antes de delegar, el orquestador debe poder responder:
-
-- ¿Cuántos archivos probablemente están involucrados?
-- ¿Qué tan grandes son?
-- ¿Qué archivos pertenecen al mismo contexto?
-- ¿Qué archivos pueden analizarse independientemente?
-- ¿Qué cambios tienen dependencias?
-- ¿Qué tareas pueden correr en paralelo?
-- ¿Qué tareas podrían generar conflictos?
-- ¿Cuánto contexto tendría que mantener cada agente?
-
-Solo después de responder estas preguntas debe decidir cuántos subagentes crear y qué responsabilidad asignar a cada uno.
-
-## Estrategia de protección del contexto
-
-- El objetivo es evitar que una sola sesión acumule toda la investigación y la implementación.
-- Las sesiones de subagentes deben nacer para resolver una unidad concreta, producir un resultado verificable y terminar.
-- Las sesiones hijas no deben convertirse en conversaciones permanentes ni conservar contexto que ya no sea necesario.
-- Cuando una subtarea nueva no necesite el contexto interno de una sesión anterior, iníciala en una sesión nueva.
-- Transfiere información entre agentes mediante resúmenes y resultados accionables, no mediante historiales completos.
-- La sesión principal debe conservar principalmente el objetivo de la tarea, el plan, las dependencias, las decisiones arquitectónicas, el estado de las subtareas, los resultados resumidos y los bloqueos.
-- La sesión principal debe evitar la exploración exhaustiva, leer repetidamente los mismos archivos, implementar personalmente todas las subtareas y copiar respuestas completas de los subagentes.
-- Considera la compactación de contexto un mecanismo de respaldo, no el flujo normal de trabajo. Prioriza la delegación, el contexto mínimo y los resúmenes antes de depender de ella.
-
-## Criterios para considerar una tarea grande
-
-Considera una tarea grande cuando presente una o más de estas señales:
-
-- Involucra múltiples módulos o features.
-- Requiere varias fases de trabajo.
-- Afecta numerosos archivos.
-- Necesita investigación extensa del repositorio o de fuentes externas.
-- Combina cambios de backend y frontend.
-- Modifica contratos, APIs o esquemas compartidos.
-- Requiere migraciones.
-- Requiere generación de código.
-- Incluye pruebas de integración.
-- Contiene subtareas independientes que pueden ejecutarse en paralelo.
-
-## Análisis de cambios Git
-
-Cuando necesites analizar cambios realizados en el código, reduce primero el
-alcance con `git status --porcelain`, `git diff --name-only` y `git diff --stat`.
-Usa `git diff` estándar cuando necesites el parche Git exacto o una salida que
-deba procesarse automáticamente.
+- Informa con precisión qué se hizo, qué archivos se consultaron o modificaron, qué decisiones se tomaron y qué validaciones se ejecutaron.
+- Usa rutas relativas al proyecto o al scope actual cuando sea posible; evita rutas absolutas salvo que sean imprescindibles para desambiguar un recurso externo.
+- Señala por separado los riesgos, pendientes, supuestos y validaciones no ejecutadas.
+- Una salida concisa puede usar las etiquetas `Objetivo completado`, `Archivos consultados`, `Archivos modificados`, `Decisiones tomadas`, `Validaciones ejecutadas` y `Riesgos o pendientes`.
