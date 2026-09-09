@@ -26,6 +26,7 @@
       "*": "ask",
       "/tmp/**": "allow",
       "~/.nuget/**": "allow",
+      "/workspace/**": "allow",
     },
     "bash": {
       "rm *": "ask",
