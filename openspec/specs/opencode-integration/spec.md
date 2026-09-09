@@ -6,63 +6,87 @@ Define el comportamiento seguro de la integración global de OpenCode al trabaja
 
 ## Requirements
 
-### Requirement: Activación por contexto OpenSpec heredado
+### Requirement: Guia portable agnostica de workflow
 
-La integración SHALL permitir que un agente active el bootstrap OpenSpec cuando un workflow ya haya resuelto un cambio mediante el CLI y le entregue el `change-id` real junto con el snapshot contractual correspondiente, aunque la solicitud original del usuario no contenga una declaración textual independiente.
+La configuracion portable SHALL limitar sus reglas obligatorias a herramientas disponibles, comportamiento, seguridad y convenciones generales de trabajo. No SHALL exigir una declaracion, identificador, snapshot, comando o protocolo perteneciente a un workflow externo para iniciar una tarea generica.
 
-#### Scenario: Workflow con contexto resuelto
+#### Scenario: Tarea generica sin contexto externo
 
-- **WHEN** un agente delegado recibe un snapshot que identifica el `change-id`, el schema, el root de planificación y el estado contextual emitido por el CLI
-- **THEN** inicia el bootstrap OpenSpec usando ese identificador sin pedir al usuario que repita una plantilla de declaración
+- **WHEN** un agente recibe una tarea ordinaria sin contexto de un workflow especifico
+- **THEN** puede analizar, planificar, implementar o integrar respetando el objetivo y las restricciones recibidas, sin devolver `BLOCKED` por la ausencia de un identificador externo
 
-#### Scenario: Solicitud directa con declaración explícita
+#### Scenario: Toolkit instalado en otro proyecto
 
-- **WHEN** una solicitud directa fuera de un workflow contiene una única declaración OpenSpec con un identificador real
-- **THEN** la integración usa esa declaración para resolver el mismo cambio y conserva el comportamiento de validación contractual
+- **WHEN** la configuracion portable se aplica en un repositorio consumidor con sus propias reglas y workflows
+- **THEN** las reglas del toolkit siguen siendo validas sin asumir una estructura de artifacts, una branch, una ruta de planificacion o un CLI del consumidor
 
-### Requirement: Validación fail-closed del contexto heredado
+### Requirement: Contexto estructurado para delegacion
 
-La integración MUST rechazar el contexto OpenSpec heredado cuando falte el identificador, sea ambiguo, contenga un placeholder, contradiga el snapshot o no pueda confirmarse mediante el CLI. El agente SHALL informar el bloqueo al orquestador y no SHALL solicitar al usuario una línea literal para reparar una delegación interna.
+El orquestador SHALL entregar a cada sub-agente un prompt autocontenido y proporcional a la tarea, usando cuando sean relevantes las secciones `Objective`, `Scope`, `Out of Scope`, `Repository Context`, `Relevant Files`, `Existing Behavior`, `Desired Behavior`, `Constraints`, `Decisions Already Made`, `Dependencies`, `Acceptance Criteria` y `Verification`. SHALL transportar hechos, decisiones, dependencias y criterios verificables, y SHALL omitir historiales, informes completos y contenido irrelevante.
 
-#### Scenario: Snapshot sin identificador verificable
+#### Scenario: Delegacion con alcance definido
 
-- **WHEN** un agente delegado recibe contexto de workflow sin un `change-id` real o con identificadores contradictorios
-- **THEN** devuelve `BLOCKED` antes de inspeccionar el repositorio y señala que la delegación debe corregirse
+- **WHEN** el orquestador delega una subtarea a un agente
+- **THEN** el agente recibe el objetivo, los archivos o areas autorizados, las exclusiones, las restricciones y las condiciones de terminado necesarias para actuar sin reconstruir la conversacion previa
 
-#### Scenario: Cambio no resoluble por el CLI
+#### Scenario: Contexto innecesario o historico
 
-- **WHEN** el `change-id` heredado no existe o el CLI no puede devolver un contexto válido para él
-- **THEN** el agente devuelve `BLOCKED` y no continúa como una tarea genérica ni inventa rutas o artifacts
+- **WHEN** los resultados de agentes anteriores contienen razonamientos o detalles que no condicionan la subtarea siguiente
+- **THEN** el orquestador conserva solo las conclusiones, decisiones y dependencias relevantes en el prompt delegado
 
-### Requirement: Propagación del identificador real entre agentes
+### Requirement: Agentes de rol reutilizables
 
-La integración SHALL transportar entre agentes el `change-id` confirmado y el subconjunto contractual relevante sin sustituirlo por la plantilla `<change-id>`, duplicar declaraciones ni pedir al usuario que complete datos que ya resolvió el workflow.
+Los agentes portables SHALL conservar responsabilidades diferenciadas para analizar, planificar, implementar, revisar e integrar, pero SHALL operar sobre el contexto recibido en lugar de depender de una skill auxiliar para activar o validar un workflow especifico. `reviewer` SHALL poder revisar tareas genericas y cambios con criterios contractuales incluidos en el contexto.
 
-#### Scenario: Delegación a una nueva sesión
+#### Scenario: Revision de tarea generica
 
-- **WHEN** el orquestador delega una etapa posterior de un cambio OpenSpec resuelto
-- **THEN** el agente receptor obtiene el identificador real, el alcance, las exclusiones y el contexto contractual suficiente para revalidar el mismo cambio
+- **WHEN** `reviewer` recibe un objetivo, un scope, criterios de aceptacion y un diff sin una especificacion externa
+- **THEN** identifica hallazgos concretos contra ese contexto y devuelve su informe sin bloquear por la ausencia de un workflow formal
 
-#### Scenario: Placeholder en el contexto
+#### Scenario: Ausencia de skills auxiliares
 
-- **WHEN** el paquete delegado contiene `<change-id>` u otro valor placeholder en lugar del identificador confirmado
-- **THEN** la delegación se considera inválida y se reporta al orquestador como error de propagación
+- **WHEN** las skills auxiliares de contexto no estan instaladas
+- **THEN** los agentes pueden ejecutar sus responsabilidades usando `AGENTS.md`, su contrato de rol y el prompt delegado
 
 ### Requirement: Separación de configuraciones local y global
 
-La documentación del repositorio, principalmente el `README.md` de la integración y el `AGENTS.md` raíz cuando corresponda, SHALL explicar que el `AGENTS.md` raíz y `.opencode/` pertenecen al proyecto anfitrión, mientras `integrations/opencode/` contiene el respaldo versionado de la configuración global que se instala manualmente bajo `~/.config/opencode/`. SHALL distinguir también los comandos globales de OpenCode de los workflows locales de OpenSpec y SHALL evitar instrucciones que mezclen ambas superficies. El `integrations/opencode/AGENTS.md` SHALL limitarse a reglas aplicables a los recursos dentro de su propio scope, ser agnóstico de ubicación y no asumir que es una política global, una instalación operativa o parte de un repositorio consumidor concreto.
+La documentación del repositorio, principalmente el `README.md` de la integración y el `AGENTS.md` raíz cuando corresponda, SHALL explicar que el `AGENTS.md` raíz y la configuración del proyecto consumidor pertenecen a ese proyecto, mientras `integrations/opencode/` contiene el respaldo versionado de la configuración portable que se instala manualmente bajo `~/.config/opencode/`. SHALL distinguir también los comandos globales de OpenCode de los workflows locales del proyecto y SHALL evitar instrucciones que mezclen ambas superficies. El `integrations/opencode/AGENTS.md` SHALL limitarse a reglas aplicables a los recursos dentro de su propio scope, ser agnóstico de ubicación y no asumir que es una política global, una instalación operativa o parte de un repositorio consumidor concreto.
 
-#### Scenario: Consulta de la guía de integración
+#### Scenario: Consulta de la guia de integracion
 
-- **WHEN** un usuario consulta el `README.md` de la integración o el `AGENTS.md` raíz
-- **THEN** puede identificar el propósito, la ubicación operativa, la relación y los límites de cada superficie sin interpretar `.opencode/` como origen de la instalación global
+- **WHEN** un usuario consulta el `README.md` de la integracion o el `AGENTS.md` raiz
+- **THEN** puede identificar el proposito, la ubicacion operativa, la relacion y los limites de cada superficie sin interpretar `integrations/opencode/` como configuracion del proyecto consumidor
 
-#### Scenario: Aplicación aislada de las reglas del toolkit
+#### Scenario: Aplicacion aislada de las reglas del toolkit
 
-- **WHEN** el `integrations/opencode/AGENTS.md` se aplica bajo cualquier ubicación que contenga sus recursos de scope
-- **THEN** sus reglas se mantienen válidas sin depender de una ruta de instalación, un repositorio consumidor, `.opencode/` ni una descripción de su carácter global
+- **WHEN** el `integrations/opencode/AGENTS.md` se aplica bajo cualquier ubicacion que contenga sus recursos de scope
+- **THEN** sus reglas se mantienen validas sin depender de una ruta de instalacion, un repositorio consumidor, una estructura de workflows o una politica local concreta
 
-#### Scenario: Instalación global sin alterar el proyecto
+#### Scenario: Instalacion portable sin alterar el proyecto
 
-- **WHEN** el usuario sincroniza manualmente la integración global
-- **THEN** copia únicamente los recursos documentados de `integrations/opencode/` hacia `~/.config/opencode/` y conserva separados el `AGENTS.md` raíz y los workflows locales de `.opencode/`
+- **WHEN** el usuario sincroniza manualmente la configuracion portable
+- **THEN** copia unicamente los recursos documentados de `integrations/opencode/` hacia `~/.config/opencode/` y conserva separadas las reglas y configuraciones del proyecto consumidor
+
+### Requirement: Indice breve de agentes portables
+
+La integración portable SHALL ofrecer en `integrations/opencode/AGENTS.md` un índice conciso de los agentes disponibles, incluyendo `analyzer`, `planner`, `implementer`, `reviewer` e `integration-checker`, su responsabilidad principal y su límite general de edición. La guía SHALL remitir los métodos, límites detallados y formatos de salida a los contratos individuales de `integrations/opencode/agents/` sin duplicarlos.
+
+#### Scenario: Consulta del conjunto portable
+
+- **WHEN** un usuario consulta la guía común de la integración
+- **THEN** puede identificar los cinco agentes portables y distinguir cuáles operan solo en lectura y cuáles pueden editar dentro de un alcance acotado
+
+#### Scenario: Selección de un agente
+
+- **WHEN** el usuario tiene una tarea de análisis, planificación, implementación, revisión o comprobación de integración
+- **THEN** la guía permite seleccionar el rol apropiado sin exigir la lectura de todos los contratos individuales ni conocer un workflow externo
+
+#### Scenario: Detalle de un contrato
+
+- **WHEN** un usuario necesita conocer el método o el formato de salida de un agente
+- **THEN** la guía dirige al contrato individual correspondiente y no presenta una segunda versión extensa o contradictoria de ese contrato
+
+#### Scenario: Toolkit aplicado en otro repositorio
+
+- **WHEN** la integración portable se aplica bajo otra ubicación o junto a workflows propios del repositorio consumidor
+- **THEN** el índice de agentes conserva sus nombres, responsabilidades y límites sin asumir rutas locales ni configuraciones del consumidor
