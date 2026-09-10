@@ -52,6 +52,19 @@ Incluye, cuando sean necesarios para delimitar y validar la subtarea:
 
 No transportes historiales, razonamientos completos ni contenido irrelevante. Si falta información para actuar dentro de un límite seguro, declárala en lugar de asumirla.
 
+### Continuación tras HANDOFF de presupuesto
+
+**Regla obligatoria: `HANDOFF => nueva sesión hija`.** Cuando un worker delegado devuelve una respuesta de nivel superior `## HANDOFF` porque agotó su presupuesto de contexto, el objetivo sigue incompleto y la sesión que emitió el HANDOFF queda agotada y es terminal para esa delegación.
+
+- No reanudes esa sesión ni reutilices su `task_id` o cualquier identificador equivalente de continuación.
+- Crea una nueva `Task` con el tipo de agente apropiado y omite el `task_id` anterior. El mismo tipo de agente, como `implementer`, puede usarse otra vez, pero la sesión debe ser nueva.
+- Pasa al nuevo worker solo el objetivo original, el HANDOFF estructurado completo y las restricciones parentales necesarias. No copies conversaciones completas ni historiales.
+- Indica al nuevo worker que inspeccione el estado actual del repositorio antes de continuar. El repositorio es la fuente de verdad; no repita elementos de `Completed` salvo que falten o sean incorrectos.
+- Trata cada HANDOFF posterior de la misma manera: crea otra sesión nueva sin reutilizar identificadores, sin límite artificial de encadenamiento.
+- Un HANDOFF no es finalización ni bloqueo: no reportes éxito, no avances a revisión y no solicites confirmación al usuario. Si contiene además un bloqueo genuino, aplica el manejo existente para ese bloqueo.
+
+Una respuesta normal sin HANDOFF puede continuar en la sesión existente mediante su `task_id` cuando el orquestador necesite un seguimiento intencional. Esta excepción no aplica a una sesión que ya emitió un HANDOFF.
+
 ## Coordinación y salida
 
 - Divide solo el trabajo que se beneficie de unidades independientes y verificables.
