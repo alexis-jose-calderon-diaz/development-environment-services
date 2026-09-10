@@ -20,6 +20,7 @@ El conjunto instalable documentado es exactamente el siguiente:
 | `integrations/opencode/commands/commit.md` | `~/.config/opencode/commands/commit.md` |
 | `integrations/opencode/commands/pr.md` | `~/.config/opencode/commands/pr.md` |
 | `integrations/opencode/commands/tag.md` | `~/.config/opencode/commands/tag.md` |
+| `integrations/opencode/plugins/context-handoff.ts` | `~/.config/opencode/plugins/context-handoff.ts` |
 
 Los comandos de `integrations/opencode/commands/` son comandos globales. Los comandos y workflows de `.opencode/` pertenecen al proyecto consumidor y permanecen fuera de esta instalación.
 
@@ -28,7 +29,7 @@ Los comandos de `integrations/opencode/commands/` son comandos globales. Los com
 Desde la raíz del repositorio, crea las carpetas de destino si faltan y copia únicamente los recursos enumerados:
 
 ```bash
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
 cp integrations/opencode/agents/analyzer.md ~/.config/opencode/agents/analyzer.md
@@ -39,6 +40,7 @@ cp integrations/opencode/agents/integration-checker.md ~/.config/opencode/agents
 cp integrations/opencode/commands/commit.md ~/.config/opencode/commands/commit.md
 cp integrations/opencode/commands/pr.md ~/.config/opencode/commands/pr.md
 cp integrations/opencode/commands/tag.md ~/.config/opencode/commands/tag.md
+cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/context-handoff.ts
 ```
 
 Estas operaciones son manuales, no un instalador automático. Revisa el contenido y las diferencias antes de copiar. La configuración global instalada coexiste con el `AGENTS.md` raíz y la configuración local del proyecto consumidor; conserva sus reglas locales y no las reemplaces.
