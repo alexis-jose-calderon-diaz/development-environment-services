@@ -63,6 +63,67 @@ Los agentes portables SHALL conservar responsabilidades diferenciadas para anali
 - **WHEN** las skills auxiliares de contexto no estan instaladas
 - **THEN** los agentes pueden ejecutar sus responsabilidades usando `AGENTS.md`, su contrato de rol y el prompt delegado
 
+### Requirement: Implementer respects context budget signals
+
+El agente `implementer` SHALL tratar como autoritarias únicamente las señales
+runtime explícitas `[context-handoff:budget]:SOFT` y
+`[context-handoff:budget]:HARD`. No SHALL estimar, contar ni inferir su propio
+uso de tokens.
+
+#### Scenario: Operacion normal sin señal
+
+- **WHEN** la solicitud no contiene una señal de presupuesto
+- **THEN** el agente ejecuta su ciclo existente, valida el cambio y devuelve su
+  formato normal sin iniciar un HANDOFF
+
+#### Scenario: Alcance del limite blando
+
+- **WHEN** la solicitud contiene `[context-handoff:budget]:SOFT`
+- **THEN** el agente evita exploracion amplia y trabajo no relacionado, prioriza
+  terminar la unidad coherente actual, persiste cambios utiles y usa
+  verificacion dirigida sin estar obligado a devolver un HANDOFF
+
+#### Scenario: Alcance del limite duro
+
+- **WHEN** la solicitud contiene `[context-handoff:budget]:HARD`
+- **THEN** el agente detiene inmediatamente la implementacion, exploracion y
+  verificacion adicional, no ejecuta mas herramientas y devuelve un HANDOFF en
+  lugar de continuar el ciclo normal
+
+#### Scenario: Herramienta bloqueada por el limite duro
+
+- **WHEN** el runtime rechaza una herramienta con `CONTEXT_BUDGET_HARD_STOP`
+- **THEN** el agente no reintenta la herramienta ni usa otra equivalente y
+  devuelve el HANDOFF con la informacion disponible
+
+### Requirement: HANDOFF durable y estructurado
+
+Cuando el presupuesto alcanza HARD, el agente SHALL devolver exactamente un
+encabezado superior `## HANDOFF` y las secciones `Objective`, `Completed`,
+`Remaining`, `Decisions`, `Files changed`, `Relevant files`, `Verification` y
+`Next action`. El contenido SHALL describir el estado persistido de forma
+concisa y accionable, sin reproducir la conversacion ni el contenido completo
+de los archivos.
+
+#### Scenario: Trabajo parcialmente completado
+
+- **WHEN** HARD aparece antes de completar el objetivo delegado
+- **THEN** `Completed` enumera solo cambios persistidos, `Remaining` enumera
+  tareas concretas pendientes y `Next action` contiene una unica primera accion
+  ejecutable
+
+#### Scenario: Verificacion interrumpida
+
+- **WHEN** HARD impide ejecutar una comprobacion pendiente
+- **THEN** `Verification` la marca explícitamente como `NOT RUN` y la incluye en
+  `Remaining` cuando sea necesaria para completar el objetivo
+
+#### Scenario: Continuacion fuera del agente
+
+- **WHEN** el agente devuelve un HANDOFF
+- **THEN** no crea, delega ni invoca otra sesion y no solicita decision del
+  usuario sobre la continuacion
+
 ### Requirement: Separación de configuraciones local y global
 
 La documentación del repositorio, principalmente el `README.md` de la integración y el `AGENTS.md` raíz cuando corresponda, SHALL explicar que el `AGENTS.md` raíz y la configuración del proyecto consumidor pertenecen a ese proyecto, mientras `integrations/opencode/` contiene el respaldo versionado de la configuración portable que se instala manualmente bajo `~/.config/opencode/`. SHALL distinguir también los comandos globales de OpenCode de los workflows locales del proyecto y SHALL evitar instrucciones que mezclen ambas superficies. El `integrations/opencode/AGENTS.md` SHALL limitarse a reglas aplicables a los recursos dentro de su propio scope, ser agnóstico de ubicación y no asumir que es una política global, una instalación operativa o parte de un repositorio consumidor concreto.
