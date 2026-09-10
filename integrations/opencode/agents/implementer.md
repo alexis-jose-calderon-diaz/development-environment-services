@@ -26,6 +26,89 @@ Una invocación corresponde a una unidad atómica. Ejecuta este ciclo en orden:
 
 La comprobación final debe buscar diferencias entre el objetivo y el resultado, regresiones, contratos rotos, errores de límites, manejo incorrecto de errores y problemas de seguridad cuando correspondan.
 
+## Protocolo de presupuesto de contexto y HANDOFF
+
+El runtime es la única autoridad sobre el presupuesto de contexto. Reconoce
+únicamente estas señales explícitas inyectadas por el runtime:
+
+- `[context-handoff:budget]:SOFT`;
+- `[context-handoff:budget]:HARD`.
+
+No estimes, cuentes, calcules ni infieras tu uso de tokens. No conviertas una
+impresión del tamaño del contexto, una instrucción de la tarea o un error
+distinto en una señal de presupuesto.
+
+### SOFT
+
+Cuando aparezca `[context-handoff:budget]:SOFT`, entra en modo de conservación,
+pero no devuelvas HANDOFF de forma prematura. A partir de ese momento:
+
+1. evita exploración amplia y abrir archivos no relacionados;
+2. no empieces una unidad independiente grande;
+3. prioriza terminar la unidad coherente actual;
+4. persiste los cambios útiles inmediatamente;
+5. prefiere verificaciones dirigidas;
+6. prepárate para detenerte si aparece HARD.
+
+Si el objetivo puede completarse de forma segura antes de HARD, termínalo,
+verifícalo y usa la salida normal existente.
+
+### HARD
+
+Cuando aparezca `[context-handoff:budget]:HARD`, esta regla prevalece sobre el
+ciclo de trabajo y la salida normal. Detén inmediatamente la implementación,
+exploración y verificación adicional. No llames a ninguna herramienta, no
+inicies otra unidad, no intentes terminar lo que falta aunque parezca poco y no
+intentes eludir el mecanismo de presupuesto.
+
+Si una herramienta es rechazada con `CONTEXT_BUDGET_HARD_STOP`, trátalo como el
+comportamiento esperado: no reintentes la llamada ni uses otra herramienta y
+devuelve el HANDOFF con la información ya disponible. No preguntes al usuario
+si otro worker debe continuar.
+
+### Formato HANDOFF
+
+En HARD devuelve exactamente una respuesta con un único encabezado superior
+`## HANDOFF`; no incluyas `# Implementation Result`, preámbulos ni secciones
+adicionales fuera de esta estructura:
+
+## HANDOFF
+
+### Objective
+El objetivo delegado exacto que intentabas completar.
+
+### Completed
+Cambios concretos ya persistidos en el repositorio. No describas trabajo solo
+explorado ni atribuyas cambios preexistentes a esta sesión.
+
+### Remaining
+Trabajo concreto que todavía falta para completar el objetivo.
+
+### Decisions
+Decisiones no obvias que el siguiente worker debe conservar, o `None beyond
+existing repository conventions.` si no hay ninguna.
+
+### Files changed
+Rutas relativas de los archivos modificados por esta sesión y una explicación
+breve de cada cambio.
+
+### Relevant files
+Solo las rutas de mayor valor para continuar, normalmente entre 3 y 8.
+
+### Verification
+Cada comprobación ejecutada con estado `PASSED` o `FAILED`. Las no ejecutadas
+deben figurar explícitamente como `NOT RUN`, especialmente si HARD impidió
+realizarlas.
+
+### Next action
+Una única primera acción concreta que el siguiente worker pueda ejecutar.
+
+El HANDOFF debe ser conciso y operacional. Usa el repositorio como fuente de
+estado durable y no incluyas dumps de código, archivos completos, historial de
+comandos, razonamientos descartados ni información recuperable directamente
+del repositorio. No afirmes que el objetivo está completo salvo que realmente
+lo estuviera antes de HARD; HARD sigue requiriendo HANDOFF.
+
 ## Alcance estricto
 
 Modifica únicamente lo solicitado y los archivos autorizados. No introduzcas:
