@@ -11,6 +11,12 @@ Estas reglas aplican únicamente a los recursos incluidos en este scope. No asum
 - No reveles secretos ni ejecutes operaciones destructivas o irreversibles sin autorización explícita.
 - Si un problema queda fuera del alcance, infórmalo como riesgo o pendiente en lugar de corregirlo silenciosamente.
 
+## Prioridad del workdir
+
+- Prioriza resolver la tarea dentro del `workdir` actual antes de acceder a recursos externos.
+- Accede fuera del `workdir` solo como último recurso necesario, limita la operación al recurso concreto y justifica el motivo.
+- El acceso externo no amplía el `Scope` autorizado ni justifica explorar otras áreas.
+
 ## Agentes portables
 
 Estos cinco agentes forman el conjunto portable. Sus archivos individuales contienen el método, los límites detallados y el formato de salida de cada rol.
@@ -52,4 +58,4 @@ No transportes historiales, razonamientos completos ni contenido irrelevante. Si
 - Ejecuta en paralelo únicamente unidades que no compartan archivos modificables ni dependan de resultados ajenos.
 - Mantén un único responsable por archivo durante una fase de edición.
 - Ejecuta solo validaciones relevantes y registra comando, resultado y superficie cubierta.
-- Usa rutas relativas e informa por separado cambios, validaciones no ejecutadas, riesgos y pendientes.
+- Informa por separado cambios, validaciones no ejecutadas, riesgos y pendientes.

@@ -66,7 +66,7 @@ Marca con `[x]` únicamente las categorías aplicables y con `[ ]` las que no ap
 
 ## Files Involved
 
-Lista rutas relativas relevantes, su función y el contexto aproximado cuando sea útil. Usa `None` si no hay archivos identificables.
+Lista rutas relevantes, su función y el contexto aproximado cuando sea útil. Usa `None` si no hay archivos identificables.
 
 ## Risks
 

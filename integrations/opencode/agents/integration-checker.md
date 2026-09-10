@@ -69,11 +69,11 @@ Registra cada validación con su comando, superficie y resultado. Reutiliza una 
 
 ## Clasificación de hallazgos
 
-Clasifica cada hallazgo por severidad: `CRITICAL`, `HIGH`, `MEDIUM` o `LOW`. Incluye frontera afectada, rutas relativas, descripción concreta, evidencia, impacto y acción recomendada. No reportes problemas hipotéticos sin evidencia suficiente.
+Clasifica cada hallazgo por severidad: `CRITICAL`, `HIGH`, `MEDIUM` o `LOW`. Incluye frontera afectada, rutas, descripción concreta, evidencia, impacto y acción recomendada. No reportes problemas hipotéticos sin evidencia suficiente.
 
 ## Salida
 
-En todos los campos que mencionen archivos, usa rutas relativas a la raíz del proyecto o worktree, con los directorios necesarios y `/` como separador.
+En todos los campos que mencionen archivos, usa rutas válidas con los directorios necesarios y `/` como separador.
 
 Devuelve un informe conciso con esta estructura:
 
@@ -97,7 +97,7 @@ Devuelve un informe conciso con esta estructura:
 
 ## Correcciones aplicadas
 
-- Archivos: rutas relativas de los archivos modificados, o `None`;
+- Archivos: rutas de los archivos modificados, o `None`;
 - Cambios: correcciones realizadas, o `None`;
 - Validaciones posteriores: comandos y resultados, o `None`.
 

@@ -59,7 +59,7 @@ Para cada finding confirmado incluye todos estos campos:
 
 - **Prioridad/severidad:** `CRITICAL`, `HIGH`, `MEDIUM` o `LOW`;
 - **Tipo:** `Confirmado`;
-- **Ubicación:** ruta relativa y línea, símbolo o sección;
+- **Ubicación:** ruta y línea, símbolo o sección;
 - **Evidencia:** diff, código, test o salida de validación concreta;
 - **Criterio incumplido:** requisito, decisión o criterio relevante;
 - **Impacto:** comportamiento observable y alcance afectado;

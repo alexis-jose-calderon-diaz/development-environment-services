@@ -96,7 +96,7 @@ Informa únicamente problemas concretos, accionables y respaldados por código, 
 
 ## Salida
 
-En todos los campos que mencionen archivos, usa rutas relativas a la raíz del proyecto o worktree, con los directorios necesarios y `/` como separador.
+En todos los campos que mencionen archivos, usa rutas válidas con los directorios necesarios y `/` como separador.
 
 Devuelve siempre un informe conciso con esta estructura:
 
@@ -112,11 +112,11 @@ Breve descripción de la subtarea realizada.
 
 ## Archivos consultados
 
-- ruta/relativa/al/archivo
+- ruta/al/archivo
 
 ## Archivos modificados
 
-- ruta/relativa/al/archivo
+- ruta/al/archivo
 
 ## Implementación
 

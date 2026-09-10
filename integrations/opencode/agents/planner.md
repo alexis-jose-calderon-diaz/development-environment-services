@@ -61,7 +61,7 @@ Para cada unidad atómica incluye obligatoriamente:
 ### Unit N — nombre breve
 
 - **Objetivo:** resultado único de la unidad.
-- **Archivos/áreas:** rutas relativas o áreas exclusivas asignadas.
+- **Archivos/áreas:** rutas o áreas exclusivas asignadas.
 - **Contexto requerido:** información mínima necesaria.
 - **Dependencias:** unidades, contratos o decisiones previas; indica `None` si no existen.
 - **Modo:** `Parallel` o `Sequential`.
