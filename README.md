@@ -69,15 +69,20 @@ La instalación global de OpenCode no es necesaria para operar los servicios. Si
 ```bash
 git clone https://github.com/alexis-jose-calderon-diaz/development-environment-services.git
 cd development-environment-services
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/skills
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
 cp integrations/opencode/agents/*.md ~/.config/opencode/agents/
 cp integrations/opencode/commands/*.md ~/.config/opencode/commands/
-cp -R integrations/opencode/skills/* ~/.config/opencode/skills/
+cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/
 ```
 
-Revisa y combina `AGENTS.md` con las reglas globales existentes antes de reemplazarlo. La skill `openspec-change-context-bootstrap` debe estar instalada en `~/.config/opencode/skills/` para que el bootstrap esté disponible en tareas OpenSpec. Para comparar y mantener ambas ubicaciones, consulta [`integrations/opencode/README.md`](integrations/opencode/README.md).
+Revisa y combina `AGENTS.md` con las reglas globales existentes antes de
+reemplazarlo. Las skills externas no forman parte de esta copia manual; para
+conocer las opciones e instalarlas globalmente solo para OpenCode, consulta el
+[catálogo de skills](integrations/opencode/skills/README.md). Para comparar y
+mantener ambas ubicaciones, consulta la
+[guía de integración](integrations/opencode/README.md).
 
 ## Operación y validación
 

@@ -6,7 +6,8 @@ El toolkit global se mantiene separado del `AGENTS.md` raíz, `.opencode/` y los
 
 ## Recursos instalables
 
-El conjunto instalable documentado es exactamente el siguiente:
+El conjunto de recursos versionados instalable documentado es exactamente el
+siguiente:
 
 | Respaldo versionado | Instalación operativa |
 | --- | --- |
@@ -23,6 +24,18 @@ El conjunto instalable documentado es exactamente el siguiente:
 | `integrations/opencode/plugins/context-handoff.ts` | `~/.config/opencode/plugins/context-handoff.ts` |
 
 Los comandos de `integrations/opencode/commands/` son comandos globales. Los comandos y workflows de `.opencode/` pertenecen al proyecto consumidor y permanecen fuera de esta instalación.
+
+## Dependencias externas de skills
+
+Las skills no forman parte de la copia manual de este respaldo. La carpeta
+`integrations/opencode/skills/` contiene un catálogo documental de dependencias
+externas que OpenCode puede cargar bajo demanda desde
+`~/.config/opencode/skills/`.
+
+Consulta el [catálogo de skills globales](skills/README.md) para conocer las
+opciones recomendadas, los límites de cada skill y los comandos selectivos de
+`npx skills add --global --agent opencode`. No copies el README ni ningún
+`SKILL.md` externo desde este respaldo.
 
 ## Instalación manual
 
