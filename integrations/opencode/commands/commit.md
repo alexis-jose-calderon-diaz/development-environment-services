@@ -200,6 +200,8 @@ Cambios:
 
 ## Advertencias
 - <ambigüedades, riesgos, exclusiones o ninguno>
+
+## Fin de propuesta
 ```
 
 La propuesta debe cumplir estas reglas:
@@ -212,12 +214,13 @@ La propuesta debe cumplir estas reglas:
   a la raíz, comienzan por `./` y las rutas no renombradas se ordenan
   lexicográficamente de forma estable. Un renombrado es una sola entrada con
   ruta anterior y nueva.
-- Muestra siempre `## Pendientes` y `## Advertencias`, aunque no tengan
-  elementos.
+- Muestra siempre `## Pendientes`, `## Advertencias` y `## Fin de propuesta`,
+  aunque no tengan elementos.
 
-Inmediatamente después de la propuesta completa, llama a `question` con una
-única pregunta y exactamente estas opciones: `Crear commits`, `Ajustar plan` y
-`Cancelar`.
+Después de emitir la propuesta completa y el marcador `## Fin de propuesta`,
+llama a `question` con una única pregunta breve y exactamente estas opciones:
+`Crear commits`, `Ajustar plan` y `Cancelar`. No repitas en `question` la lista
+de archivos ni el plan detallado.
 
 - No hagas staging ni commit antes de una selección inequívoca de `Crear
   commits`.
