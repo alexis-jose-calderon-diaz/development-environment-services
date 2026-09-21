@@ -1,0 +1,18 @@
+paths:
+  /users/{userId}:
+    get:
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, displayName]
+                properties:
+                  id: {type: integer}
+                  displayName: {type: string}
