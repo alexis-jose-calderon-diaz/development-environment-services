@@ -1,26 +1,28 @@
 # Skills globales para OpenCode
 
-Esta carpeta documenta dependencias externas de skills que encajan con el
-toolkit portable. No contiene copias de sus `SKILL.md`: las skills se instalan
-por separado en la configuración global de OpenCode y se cargan bajo demanda.
+Esta carpeta contiene una skill propia versionada y un catálogo de skills
+externas opcionales. La skill propia se instala manualmente como parte del
+respaldo portable; las externas se instalan por separado y se cargan bajo
+demanda.
+
+## Skill propia
+
+| Skill | Uso | Instalación y límites |
+| --- | --- | --- |
+| `grouped-commits` | Agrupar cambios Git por intención, mostrar una propuesta completa y crear commits tras aprobación explícita | Se copia desde este respaldo a `~/.config/opencode/skills/grouped-commits/SKILL.md`; no depende de otra skill |
 
 La fuente curada es [`github/awesome-copilot`](https://github.com/github/awesome-copilot).
 La referencia fue revisada el 2026-09-11 sobre la rama `main`; el contenido de
 la fuente externa puede cambiar después de esa fecha.
 
-## Recomendadas
-
-| Skill | Uso | Relación y límites |
-| --- | --- | --- |
-| [`git-commit`](https://github.com/github/awesome-copilot/tree/main/skills/git-commit) | Base para Conventional Commits, análisis de diff y organización de commits | Es dependencia explícita de `/commit`. Las reglas locales del command, incluida la confirmación, la seguridad, el staging y la ausencia de validaciones del proyecto, prevalecen sobre esta skill. |
-
-## Opcionales
+## Skills externas opcionales
 
 Instala estas skills solo cuando el tipo de trabajo las justifique. No forman
 parte del baseline global.
 
 | Skill | Uso | Relación y límites |
 | --- | --- | --- |
+| [`git-commit`](https://github.com/github/awesome-copilot/tree/main/skills/git-commit) | Base general para Conventional Commits y análisis de diffs | Es opcional; `grouped-commits` no depende de ella y conserva sus propias reglas de aprobación y seguridad. |
 | [`excalidraw-diagram-generator`](https://github.com/github/awesome-copilot/tree/main/skills/excalidraw-diagram-generator) | Crear diagramas de flujo, arquitectura, relaciones, secuencias y otros archivos `.excalidraw` | Complementa la exploración visual y la documentación arquitectónica. Solo es útil cuando se trabaja con el formato y el ecosistema Excalidraw. |
 | [`documentation-writer`](https://github.com/github/awesome-copilot/tree/main/skills/documentation-writer) | Redactar documentación técnica siguiendo Diátaxis | Es una skill opinada: exige identificar tipo de documento, audiencia, objetivo y alcance, y aprobar una estructura antes de redactar. No sustituye las convenciones documentales del repositorio. |
 | [`docs-sync-audit`](https://github.com/github/awesome-copilot/tree/main/skills/docs-sync-audit) | Auditar divergencias entre código, configuración, comandos y documentación | Complementa a `reviewer` con una auditoría documental read-only. No es una revisión general de código y debe mantenerse dentro del alcance documental necesario. |
@@ -33,14 +35,7 @@ parte del baseline global.
 esté disponible en todos los repositorios mediante OpenCode, usa `--global` y
 limita el destino con `--agent opencode`:
 
-```bash
-npx skills add https://github.com/github/awesome-copilot \
-  --skill git-commit \
-  --global \
-  --agent opencode
-```
-
-Para instalar un grupo opcional, repite `--skill` para cada nombre seleccionado:
+Para instalar una o varias skills externas, selecciona cada nombre explícitamente:
 
 ```bash
 npx skills add https://github.com/github/awesome-copilot \
@@ -61,7 +56,8 @@ parte de este toolkit.
 
 - Las skills externas amplían capacidades, pero no autorizan a cambiar el
   alcance, los permisos ni las reglas del toolkit.
-- `/commit` conserva sus reglas locales cuando contradicen a `git-commit`.
+- `grouped-commits` es la skill propia para organizar commits y no requiere
+  instalar `git-commit`.
 - Revisa el contenido de una skill antes de instalarla y compara los cambios
   antes de actualizar una instalación global existente.
 - Consulta las skills instaladas globalmente con `npx skills ls -g` y
@@ -70,7 +66,7 @@ parte de este toolkit.
   mismas.
 
 La instalación manual del respaldo versionado y la instalación de estas
-dependencias externas son operaciones separadas. Consulta la
-[guía de integración](../README.md) para sincronizar reglas, agents,
-commands, configuración y plugins sin copiar este catálogo como si fuera una
-skill ejecutable.
+dependencias externas son operaciones separadas. Consulta la [guía de
+integración](../README.md) para sincronizar reglas, agents, commands,
+configuración, plugins y la skill propia sin copiar este catálogo como si fuera
+una skill ejecutable.

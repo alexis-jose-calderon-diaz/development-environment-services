@@ -69,19 +69,21 @@ La instalación global de OpenCode no es necesaria para operar los servicios. Si
 ```bash
 git clone https://github.com/alexis-jose-calderon-diaz/development-environment-services.git
 cd development-environment-services
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins ~/.config/opencode/skills/grouped-commits
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
 cp integrations/opencode/agents/*.md ~/.config/opencode/agents/
 cp integrations/opencode/commands/*.md ~/.config/opencode/commands/
+cp integrations/opencode/skills/grouped-commits/SKILL.md ~/.config/opencode/skills/grouped-commits/SKILL.md
 cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/
 ```
 
 Revisa y combina `AGENTS.md` con las reglas globales existentes antes de
-reemplazarlo. Las skills externas no forman parte de esta copia manual; para
-conocer las opciones e instalarlas globalmente solo para OpenCode, consulta el
-[catálogo de skills](integrations/opencode/skills/README.md). Para comparar y
-mantener ambas ubicaciones, consulta la
+reemplazarlo. La skill propia `grouped-commits` sí forma parte de esta copia;
+las skills externas no. Para conocer las opciones externas e instalarlas
+globalmente solo para OpenCode, consulta el [catálogo de
+skills](integrations/opencode/skills/README.md). Para comparar y mantener
+ambas ubicaciones, consulta la
 [guía de integración](integrations/opencode/README.md).
 
 ## Operación y validación

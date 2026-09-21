@@ -361,384 +361,273 @@ tree.
 - **THEN** el comando muestra un resultado breve sin propuesta y sin bloque de
   comandos
 
-### Requirement: Modos explícitos para cambios staged
+### Requirement: Skill portable para commits agrupados
 
-El comando portable `commit` SHALL separar el modo normal del working tree del
-modo explícito del index mediante una sintaxis de argumentos determinista. El
-modo `staged` SHALL seleccionarse únicamente cuando el primer token de la
-invocación sea exactamente `--staged`; en cualquier otro caso sin una opción
-válida, el modo SHALL ser `working-tree`.
+La integración SHALL proporcionar una skill versionada que pueda activarse cuando
+el usuario pida revisar, agrupar, separar o crear commits lógicos a partir de
+cambios Git. La skill SHALL analizar el repositorio actual, preparar una
+propuesta completa y crear uno o más commits únicamente después de una
+aprobación explícita. SHALL ser independiente de la interfaz de invocación y no
+SHALL requerir placeholders, frontmatter adicional ni herramientas específicas
+de un proveedor.
 
-#### Scenario: Cambios staged bloquean el modo normal
+#### Scenario: Activación por una petición de commits agrupados
 
-- **WHEN** el usuario ejecuta `/commit` sin `--staged` como primer token y existe al menos un cambio staged
-- **THEN** el comando SHALL detenerse antes de hacer staging o crear commits,
-  SHALL dejar intacto el index y SHALL indicar que debe usarse `/commit --staged`
-  o prepararse manualmente el index
+- **WHEN** el usuario pide revisar cambios y crear commits agrupados, aunque no
+  mencione el nombre de la skill
+- **THEN** la skill analiza el repositorio actual y prepara el flujo de
+  propuesta sin depender de un command o de argumentos de OpenCode
 
-#### Scenario: `--staged` crea un commit del index
+#### Scenario: Petición de separación de cambios
 
-- **WHEN** el usuario ejecuta `/commit --staged` con `--staged` como primer token y existe contenido staged
-- **THEN** el comando SHALL proponer y crear, tras confirmación explícita, un
-  único commit con exactamente el contenido del index, sin reagruparlo,
-  dividirlo ni modificar su staging
+- **WHEN** el usuario pide separar cambios en commits lógicos o limpiar la
+  organización del working tree
+- **THEN** la skill activa el mismo flujo de análisis y aprobación antes de
+  proponer o crear commits
 
-#### Scenario: Cambios fuera del index quedan intactos
+#### Scenario: Ausencia de una skill externa
 
-- **WHEN** `/commit --staged` se ejecuta con cambios staged y también existen
-  cambios unstaged o no trackeados
-- **THEN** SHALL incluir únicamente el index en el commit y SHALL dejar intactos
-  los demás cambios y SHALL informarlos como pendientes cuando sea relevante
+- **WHEN** la skill externa `git-commit` no está instalada
+- **THEN** la skill puede proponer y crear commits aplicando sus propias reglas
+  mínimas de Conventional Commits, agrupación y seguridad
 
-#### Scenario: `--staged` sin contenido staged
+### Requirement: Selección segura del alcance y agrupación
 
-- **WHEN** el usuario ejecuta `/commit --staged` con `--staged` como primer token y no existe ningún cambio staged
-- **THEN** el comando SHALL detenerse sin hacer staging ni crear commits e
-  informar que no hay contenido en el index para procesar
+La skill SHALL inspeccionar primero la raíz, `HEAD`, branch, upstream, estado,
+operaciones Git en curso, index, working tree, rutas no trackeadas y cambios
+relevantes del repositorio. Si el repositorio no tiene `HEAD`, está detached,
+contiene conflictos o tiene una operación de merge, rebase, cherry-pick o revert
+en curso, SHALL detenerse antes de escribir y explicar el bloqueo.
 
-#### Scenario: El modo working tree conserva la agrupación
+Si existe contenido staged, SHALL tratar el index como la selección explícita del
+usuario, SHALL proponer exactamente un commit para todo su contenido y SHALL
+dejar staged, unstaged, no trackeados e ignorados fuera del alcance
+correspondiente. Si no existe contenido staged, SHALL considerar cambios
+trackeados y no trackeados no ignorados, agrupar archivos completos por
+intención lógica y dejar los ignorados fuera del plan.
 
-- **WHEN** el usuario ejecuta `/commit` sin `--staged` como primer token, sin cambios staged y existen cambios en el working tree
-- **THEN** el comando SHALL analizar todos los cambios no ignorados elegibles y
-  SHALL hacer staging únicamente de las rutas aprobadas para cada commit
+La skill SHALL mantener juntos los archivos de una modificación funcional
+coherente, incluidos cambios cross-layer, fuentes con generados y contratos con
+consumidores. No SHALL dividir hunks automáticamente; si un archivo mezcla
+intenciones separables, SHALL detenerse y solicitar staging manual. Renombres,
+eliminaciones, binarios, symlinks y submódulos SHALL conservar su identidad y
+estado real durante la propuesta.
 
-#### Scenario: Un archivo pertenece a un único commit
+#### Scenario: Index seleccionado implícitamente
 
-- **WHEN** un archivo completo contiene cambios relacionados con una sola
-  intención lógica
-- **THEN** el archivo SHALL pertenecer a un único commit y no SHALL dividirse
-  automáticamente por hunks
+- **WHEN** existen cambios staged, aunque también existan cambios fuera del
+  index
+- **THEN** la propuesta contiene un único commit con exactamente el contenido
+  staged y reporta lo demás como pendiente sin modificarlo
+
+#### Scenario: Working tree sin staged
+
+- **WHEN** no existe contenido staged y hay cambios trackeados o no trackeados no
+  ignorados
+- **THEN** la skill propone grupos por intención lógica, asigna cada archivo a
+  un único commit y no agrupa únicamente por directorio o extensión
 
 #### Scenario: Archivo con intenciones separables
 
-- **WHEN** un archivo contiene cambios de dos intenciones que deberían formar
-  commits separados
-- **THEN** el comando SHALL detenerse y solicitar staging manual, sin dividir
-  hunks automáticamente ni elegir una intención de forma arbitraria
-
-### Requirement: Interfaz de argumentos reducida y segura
-
-El comando SHALL reconocer `--staged` como única opción formal y SHALL
-interpretarlo únicamente cuando sea el primer token de la invocación. El texto
-posterior que no sea una opción SHALL poder usarse como contexto no ejecutable.
-Una opción desconocida, o cualquier token posterior que empiece por `-`, SHALL
-detener el flujo sin analizar ni modificar el repositorio. El command SHALL
-distinguir los argumentos reales recibidos de las menciones de opciones que
-formen parte de su propia documentación.
-
-#### Scenario: Opción staged válida
-
-- **WHEN** el primer token real de la invocación es exactamente `--staged` y ningún token posterior empieza por `-`
-- **THEN** el comando SHALL seleccionar exclusivamente el modo index y SHALL tratar el texto restante sin opciones como contexto no ejecutable
-
-#### Scenario: Ejecución normal sin opción
-
-- **WHEN** la invocación no tiene argumentos o su primer token no empieza por `-` y ningún token posterior empieza por `-`
-- **THEN** el comando SHALL seleccionar el modo working-tree y SHALL tratar todo el texto recibido como contexto no ejecutable
-
-#### Scenario: Opción desconocida
-
-- **WHEN** la invocación contiene una opción distinta de `--staged`, ya sea como primer token o después del primero
-- **THEN** el comando SHALL informar que la opción no está soportada y SHALL
-  terminar sin ejecutar staging, commits ni otras operaciones de escritura Git
-
-#### Scenario: Opción posterior no soportada
-
-- **WHEN** un token posterior al primero empieza por `-`, incluido un segundo `--staged`
-- **THEN** el comando SHALL informar que la sintaxis de opciones no está soportada y SHALL terminar sin ejecutar staging, commits ni otras operaciones de escritura Git
-
-#### Scenario: Mención documental de la opción
-
-- **WHEN** el texto del command menciona `--staged` fuera del bloque que representa los argumentos reales de la invocación
-- **THEN** esas menciones SHALL permanecer como documentación y no SHALL cambiar el modo seleccionado
-
-### Requirement: Análisis superficial con revisión dirigida
-
-El comando SHALL comenzar el análisis del alcance elegido con el estado, las
-rutas, los estados y las estadísticas de los cambios, sin inspeccionar de forma
-exhaustiva el proyecto ni los archivos no relacionados. SHALL revisar el diff
-detallado únicamente cuando el resumen no permita resolver una ambigüedad real,
-decidir la agrupación, redactar el plan o evaluar una señal de seguridad en una
-ruta elegible.
-
-#### Scenario: Resumen suficiente para proponer el plan
-
-- **WHEN** las rutas, estados y estadísticas permiten identificar el alcance y
-  la intención de los cambios
-- **THEN** el comando SHALL generar el plan sin exigir una inspección exhaustiva
-  del contenido del diff
-
-#### Scenario: Ambigüedad o señal de seguridad
-
-- **WHEN** el resumen no permite agrupar o describir correctamente un cambio, o
-  una ruta elegible parece contener información sensible
-- **THEN** el comando SHALL ampliar la revisión únicamente a la evidencia
-  necesaria, sin mostrar valores sensibles ni buscar secretos fuera de las rutas
-  elegibles
-
-### Requirement: Composición con la skill externa de commits
-
-El command `/commit` SHALL usar la skill externa `git-commit` como base para las
-capacidades generales de Conventional Commits, análisis del diff,
-determinación de `type` y `scope`, mensajes, breaking changes y ejecución
-general de commits. El command SHALL añadir sus políticas locales sin modificar,
-copiar ni extender físicamente la skill externa. Cuando exista una diferencia,
-la regla local más restrictiva SHALL prevalecer para este command.
-
-#### Scenario: Capacidad general delegada a la skill
-
-- **WHEN** el command analiza un cambio elegible para crear un commit
-- **THEN** SHALL aprovechar la capacidad general de la skill para analizarlo y
-  generar un Conventional Commit, aplicando además las restricciones locales
-  del command
-
-#### Scenario: Skill externa permanece intacta
-
-- **WHEN** se refactoriza el command portable
-- **THEN** no SHALL modificarse ningún archivo de la skill externa ni SHALL
-  requerirse una copia de sus explicaciones generales dentro del command
-
-#### Scenario: Política local más restrictiva
-
-- **WHEN** la skill permite una operación que el workflow local prohíbe
-- **THEN** el command SHALL detener o restringir la operación conforme a su
-  política local, sin relajarla por la recomendación general de la skill
-
-### Requirement: Agrupación lógica de commits del working tree
-
-En modo `working-tree`, el command SHALL agrupar archivos completos por
-intención lógica y SHALL separar las intenciones independientes. No SHALL
-agrupar archivos únicamente por compartir directorio o tipo. Cambios de varias
-capas SHALL permanecer juntos cuando formen una modificación funcional
-coherente; contratos compartidos y consumidores SHALL poder permanecer juntos
-cuando separarlos deje un commit conceptualmente incompleto.
-
-#### Scenario: Intenciones independientes
-
-- **WHEN** el working tree contiene cambios de intenciones independientes
-- **THEN** cada intención SHALL proponerse como un commit separado, con cada
-  archivo asignado a un único grupo
+- **WHEN** un archivo contiene cambios que pertenecen a intenciones distintas
+- **THEN** la skill detiene el flujo y solicita staging manual sin elegir una
+  intención arbitrariamente
 
 #### Scenario: Cambio cross-layer coherente
 
-- **WHEN** una única modificación funcional requiere cambios coordinados en
-  backend, cliente, tests, documentación o tooling
-- **THEN** los archivos necesarios SHALL permanecer en el mismo commit aunque
-  pertenezcan a capas o categorías distintas
+- **WHEN** backend, cliente, tests, documentación o tooling forman una única
+  modificación funcional
+- **THEN** la skill los mantiene en el mismo commit cuando separarlos dejaría
+  una intención incompleta
 
-#### Scenario: Código fuente y archivos generados
+#### Scenario: Repositorio no preparado para commits
 
-- **WHEN** un archivo generado cambia como consecuencia directa del cambio
-  fuente que lo produce
-- **THEN** ambos SHALL permanecer juntos en el mismo commit cuando representen
-  una única intención funcional
+- **WHEN** no existe `HEAD`, el branch está detached o hay conflictos o una
+  operación Git en curso
+- **THEN** la skill no realiza staging ni commits y solicita resolver el estado
+  manualmente antes de volver a intentarlo
 
-#### Scenario: Contrato y consumidores
+#### Scenario: Cambios ignorados fuera del alcance
 
-- **WHEN** separar un contrato compartido de sus consumidores dejaría uno de
-  los commits conceptualmente incompleto
-- **THEN** el contrato y los consumidores afectados SHALL permanecer juntos
-  en el mismo commit
+- **WHEN** existen archivos ignorados junto con cambios elegibles
+- **THEN** la skill no los incluye ni los inspecciona como parte del plan y los
+  cambios elegibles conservan su agrupación normal
 
-#### Scenario: Separación artificial por categoría
+### Requirement: Propuesta completa y aprobación explícita
 
-- **WHEN** backend y frontend, tests, documentación o tooling forman una única
-  modificación coherente
-- **THEN** el command no SHALL separarlos artificialmente solo por su categoría
+Antes de cualquier operación de staging o commit, la skill SHALL mostrar una
+propuesta completa con los valores reales de alcance (`index` o
+`working-tree`), branch, upstream, cantidad de commits, intención, mensaje
+exacto, estado Git y rutas de cada commit, además de pendientes, exclusiones y
+advertencias. Las rutas SHALL representarse de forma segura y estable,
+incluyendo estados de renombre, eliminación, binario, symlink o submódulo sin
+permitir que su contenido altere la estructura de la propuesta. SHALL cerrar
+con el marcador `## Fin de propuesta`.
 
-### Requirement: Mensajes locales en español
+Después de la propuesta, la skill SHALL pedir una decisión inequívoca mediante
+el mecanismo de confirmación disponible. Solo las decisiones exactas
+`Crear commits`, `Ajustar propuesta` y `Cancelar` SHALL tener significado;
+respuestas afirmativas genéricas, silencios o texto ambiguo no SHALL autorizar
+escrituras. `Ajustar propuesta` SHALL reconstruir la propuesta completa y
+`Cancelar` SHALL dejar intactos el index y el working tree.
 
-Los commits propuestos por `/commit` SHALL conservar el `type` de Conventional
-Commits en inglés y SHALL usar una descripción en español, concreta, en
-minúsculas y relacionada con la intención del cambio. Cuando exista un body,
-este SHALL estar en español. El `scope` SHALL basarse en evidencia real del
-repositorio y no SHALL inventarse.
+#### Scenario: Propuesta de varios grupos
 
-#### Scenario: Mensaje de una línea
+- **WHEN** el working tree contiene varias intenciones independientes
+- **THEN** la propuesta muestra un bloque consecutivo por commit, con un mensaje
+  exacto y rutas completas para cada bloque
 
-- **WHEN** una intención requiere un commit sin body ni footer adicional
-- **THEN** el mensaje SHALL contener exactamente un `type` válido, un `scope`
-  sustentado por evidencia cuando corresponda y una descripción concreta en
-  español
+#### Scenario: Propuesta del index
 
-#### Scenario: Mensaje con body o breaking change
+- **WHEN** el alcance es el index
+- **THEN** la propuesta muestra exactamente un commit y no incluye cambios
+  unstaged ni no trackeados
 
-- **WHEN** el análisis determina que el commit necesita body, footer o una
-  indicación de breaking change
-- **THEN** la descripción y el body SHALL estar en español, mientras las
-  palabras clave normativas de Conventional Commits SHALL conservar su forma
-  requerida
+#### Scenario: Aprobación inequívoca
 
-### Requirement: Propuesta exacta y confirmación obligatoria
+- **WHEN** la propuesta termina y el usuario selecciona exactamente `Crear
+  commits`
+- **THEN** la skill puede continuar con exactamente ese alcance, orden y
+  mensajes, después de revalidar el repositorio
 
-Antes de cualquier operación de escritura Git, el command SHALL mostrar una
-propuesta completa que incluya exactamente los campos `Modo`, `Branch`,
-`Upstream` y `Commits`, seguida por bloques consecutivos `### Commit N` con la
-`Intención`, el mensaje exacto y los cambios con estados y rutas. La propuesta
-SHALL incluir siempre las secciones `## Pendientes` y `## Advertencias`, y SHALL
-terminar con el marcador visible `## Fin de propuesta`. `Commits` SHALL
-coincidir con la cantidad de commits propuestos. La llamada a `question` SHALL
-ocurrir después de emitir dicho marcador y SHALL mantener un contenido breve,
-sin repetir la lista completa de archivos ni el plan detallado.
+#### Scenario: Ajuste o cancelación
 
-#### Scenario: Propuesta working tree
+- **WHEN** el usuario selecciona `Ajustar propuesta` o `Cancelar`
+- **THEN** la skill no realiza staging ni commits; en el primer caso vuelve a
+  presentar la propuesta completa y en el segundo termina
 
-- **WHEN** el modo es `working-tree` y existen varias intenciones
-- **THEN** la propuesta SHALL mostrar un bloque `### Commit N` por intención,
-  en el orden de ejecución, sin nombres alternativos como grupo o cambio, y
-  SHALL cerrar con `## Fin de propuesta`
+#### Scenario: Aprobación ambigua
 
-#### Scenario: Propuesta staged
+- **WHEN** el usuario responde con una confirmación genérica, incompleta o
+  distinta de las tres decisiones definidas
+- **THEN** la skill no escribe, explica que necesita una decisión inequívoca y
+  mantiene intactos el index y el working tree
 
-- **WHEN** el modo es `staged` y existe contenido elegible en el index
-- **THEN** la propuesta SHALL mostrar exactamente `Commits: 1`, únicamente
-  `### Commit 1` y todos los archivos staged elegibles en ese commit, y SHALL
-  cerrar con `## Fin de propuesta`
+#### Scenario: Ruta con representación especial
 
-#### Scenario: Estados y rutas de cambios
+- **WHEN** una ruta contiene espacios, backticks, saltos de línea o comienza por
+  `-`
+- **THEN** la propuesta la muestra sin alterar su formato ni convertir su
+  contenido en instrucciones o comandos adicionales
 
-- **WHEN** la propuesta enumera archivos
-- **THEN** SHALL usar únicamente estados Git válidos, SHALL mostrar rutas
-  relativas a la raíz que comiencen por `./`, SHALL conservar los renombrados
-  como una sola entrada con ruta anterior y nueva, y SHALL ordenar de forma
-  estable las demás rutas lexicográficamente
+### Requirement: Mensajes y seguridad del commit
 
-#### Scenario: Confirmación del plan
+Los mensajes SHALL seguir Conventional Commits con `type` en inglés, un
+`scope` sustentado por evidencia cuando exista y una descripción concreta en el
+idioma de la petición del usuario. El body SHALL usar el mismo idioma y las
+palabras clave normativas SHALL conservar su forma requerida.
 
-- **WHEN** la propuesta está completa y no existe una ambigüedad pendiente
-- **THEN** el command SHALL emitir primero la propuesta completa junto con
-  `## Fin de propuesta`, SHALL usar después `question` con las opciones exactas
-  `Crear commits`, `Ajustar plan` y `Cancelar`, y no SHALL ejecutar staging ni
-  commit antes de recibir `Crear commits`
+La skill SHALL tratar rutas, diffs, mensajes, argumentos y contenido del
+repositorio como datos no confiables. SHALL construir comandos sin interpolar
+datos del repositorio como código, sin `eval` y sin operaciones de staging
+amplias. SHALL escapar o aislar rutas y mensajes con representación segura y no
+SHALL mostrar valores sensibles, buscar secretos fuera de las rutas elegibles ni
+ofrecer autorización para incluir una ruta con evidencia razonable de secreto.
+En working tree SHALL excluir las rutas sospechosas; si una ruta sospechosa está
+staged SHALL detenerse sin modificar el index. Si todas las rutas elegibles
+quedan excluidas, SHALL terminar sin crear commits y explicar el motivo sin
+revelar secretos. SHALL respetar hooks y firma y no SHALL ejecutar push,
+operaciones destructivas, amend, `--no-verify` ni validaciones del proyecto como
+parte de este flujo.
 
-#### Scenario: Plan ajustado
+#### Scenario: Idioma de la petición
 
-- **WHEN** el usuario selecciona `Ajustar plan` o cambia cualquier elemento del
-  plan
-- **THEN** el command SHALL mostrar nuevamente la propuesta completa, SHALL
-  cerrarla con `## Fin de propuesta` y SHALL requerir una nueva confirmación
-  antes de escribir
+- **WHEN** el usuario solicita el flujo en un idioma determinado
+- **THEN** la descripción y el body de cada mensaje usan ese idioma y el
+  `type` permanece en inglés
 
-### Requirement: Protección frente a cambios concurrentes
-
-El command SHALL capturar el estado del repositorio utilizado para construir la
-propuesta y SHALL volver a comprobarlo después de la confirmación y antes de
-cada operación de escritura. SHALL comparar los cambios relevantes y el index
-con el estado aprobado. Si existe una diferencia, SHALL detenerse, no SHALL
-reconciliarla automáticamente y SHALL requerir una nueva propuesta y
-confirmación.
-
-#### Scenario: Repositorio sin cambios concurrentes
-
-- **WHEN** el estado relevante y el index coinciden con la propuesta confirmada
-- **THEN** el command SHALL poder continuar con exactamente las rutas, el orden
-  y los mensajes aprobados
-
-#### Scenario: Repositorio cambiado tras confirmar
-
-- **WHEN** aparece, desaparece o cambia una ruta relevante, o cambia el index
-  después de la confirmación
-- **THEN** el command SHALL detenerse sin aplicar el plan anterior y SHALL
-  informar que debe reconstruirse y confirmarse una nueva propuesta
-
-### Requirement: Seguridad y verificación de la ejecución
-
-El command SHALL inspeccionar señales de secretos únicamente en las rutas
-elegibles y nunca SHALL mostrar sus valores. Ante evidencia razonable de un
-secreto, en working tree SHALL excluir la ruta y, en modo `--staged`, SHALL
-detenerse para que el usuario corrija manualmente el index; nunca SHALL ofrecer
-una opción para autorizar su inclusión. El command SHALL respetar hooks y firma,
-no SHALL ejecutar validaciones del proyecto y SHALL verificar el resultado tras
-cada commit.
-
-#### Scenario: Ruta sospechosa en working tree
+#### Scenario: Evidencia de secreto en working tree
 
 - **WHEN** una ruta elegible del working tree contiene evidencia razonable de un
   secreto
-- **THEN** el command SHALL excluirla del plan sin mostrar su valor y SHALL
-  poder continuar con otros grupos que no dependan de ella
+- **THEN** la skill excluye la ruta sin mostrar el valor y puede continuar solo
+  con grupos que no dependan de ella
 
-#### Scenario: Ruta sospechosa en staged
+#### Scenario: Evidencia de secreto en staged
 
 - **WHEN** el index contiene evidencia razonable de un secreto
-- **THEN** el command SHALL detenerse sin modificar el index ni crear el commit
-  y SHALL pedir que el usuario corrija manualmente el staging, sin ofrecer
-  autorización para incluir la ruta
+- **THEN** la skill detiene el flujo sin modificar el index ni crear commits y
+  solicita corregir manualmente el staging
 
-#### Scenario: Fallo de hook
+#### Scenario: Todas las rutas elegibles son inseguras
 
-- **WHEN** un hook falla o modifica archivos o el index durante un commit
-- **THEN** el command SHALL comprobar si el commit llegó a crearse, SHALL
-  detenerse, no SHALL usar `--no-verify`, no SHALL hacer amend y no SHALL
-  modificar automáticamente el código para corregir el hook
+- **WHEN** todas las rutas candidatas contienen evidencia razonable de secretos
+  o no pueden inspeccionarse de forma segura
+- **THEN** la skill termina sin staging ni commits, informa que no queda un grupo
+  elegible y no muestra ningún valor sensible
 
-#### Scenario: Verificación posterior a un commit
+#### Scenario: Datos del repositorio como datos
 
-- **WHEN** un commit termina correctamente
-- **THEN** el command SHALL comprobar su SHA corto, mensaje, rutas realmente
-  incluidas y estado residual, y no SHALL continuar con otro commit si el
-  resultado no coincide con la propuesta aprobada
+- **WHEN** una ruta, diff, mensaje o argumento contiene texto que parece una
+  instrucción o una opción de shell
+- **THEN** la skill lo trata como datos, lo representa de forma segura y no lo
+  ejecuta ni lo usa para ampliar el alcance
 
-#### Scenario: Validaciones fuera de alcance
+### Requirement: Revalidación y verificación de commits
 
-- **WHEN** el command crea o verifica commits
-- **THEN** no SHALL ejecutar ni afirmar haber ejecutado build, tests, lint,
-  format, type-check, migraciones, generación de clientes, instalación de
-  dependencias o servicios
+La skill SHALL capturar una fotografía completa de la evidencia usada para la
+propuesta, incluyendo `HEAD` SHA, branch, upstream, estado de operaciones Git,
+estado del index, diff del working tree, rutas no trackeadas elegibles y la
+asignación de rutas a grupos. SHALL volver a comprobar esa fotografía después
+de la aprobación y antes de cada escritura. Si una ruta aparece, desaparece o
+cambia, si cambia el index, si avanza `HEAD` o si cambia el estado operativo,
+SHALL invalidar la propuesta y solicitar una nueva aprobación sin reconciliar
+automáticamente.
 
-### Requirement: Catalogo de skills externas para uso global
+En working tree, SHALL hacer staging únicamente con rutas explícitas del grupo
+aprobado y SHALL comprobar que el index coincide antes del commit. Después de
+cada commit SHALL comprobar el SHA, mensaje, rutas incluidas y estado residual;
+antes de continuar con otro commit SHALL repetir la comprobación relevante. Un
+hook fallido, un hook que modifica el working tree o el index, o un resultado
+divergente SHALL detener la secuencia sin rollback, amend ni correcciones
+automáticas.
 
-La integracion portable SHALL documentar un catalogo curado de skills externas para OpenCode, distinguiendo como minimo las dependencias recomendadas de las opciones bajo demanda. Cada entrada SHALL indicar su fuente, su proposito, su relacion con los agentes o commands existentes y cualquier solapamiento o limite relevante.
+#### Scenario: Cambio concurrente tras aprobar
 
-#### Scenario: Consulta del catalogo recomendado
+- **WHEN** el repositorio cambia después de la aprobación y antes de escribir,
+  incluyendo cambios en `HEAD`, branch, index o una ruta relevante
+- **THEN** la skill detiene el flujo y exige reconstruir y aprobar una nueva
+  propuesta
 
-- **WHEN** un usuario consulta la documentacion de skills globales
-- **THEN** puede identificar `git-commit` como dependencia de `/commit` y distinguirla de las skills opcionales sin instalar el catalogo completo
+#### Scenario: Commit verificado
 
-#### Scenario: Consulta de una skill opcional
+- **WHEN** un commit termina correctamente y coincide con la propuesta
+- **THEN** la skill informa su SHA, mensaje, rutas y estado residual y solo
+  continúa después de revalidar el siguiente grupo
 
-- **WHEN** el usuario evalua una skill opcional del catalogo
-- **THEN** encuentra el caso de uso que la activa y la limitacion que impide tratarla como parte obligatoria del baseline global
+#### Scenario: Hook fallido
 
-#### Scenario: Skill externa no versionada
+- **WHEN** un hook falla o modifica el working tree o el index
+- **THEN** la skill comprueba el estado real, informa el resultado y se detiene
+  sin omitir hooks, hacer amend, revertir ni corregir automáticamente
 
-- **WHEN** el usuario revisa el respaldo versionado de la integracion
-- **THEN** puede distinguir el catalogo documental de los `SKILL.md` externos y no interpreta que el repositorio conserve una copia ejecutable de esas skills
+#### Scenario: HEAD avanza sin cambios visibles en las rutas
 
-### Requirement: Instalacion global dirigida de skills
+- **WHEN** otro proceso crea o mueve un commit después de la aprobación aunque
+  las rutas propuestas parezcan iguales
+- **THEN** la skill invalida la propuesta por cambio de `HEAD` y solicita una
+  nueva aprobación
 
-La documentacion SHALL proporcionar comandos de `npx skills add` que instalen las skills seleccionadas en el alcance global y las dirijan a OpenCode. No SHALL recomendar la instalacion masiva de skills del catalogo externo como baseline, y SHALL indicar que los commands locales pueden imponer restricciones mas fuertes que una skill externa.
+### Requirement: Skill propia documentada como recurso portable
 
-#### Scenario: Instalacion global para OpenCode
+La integración SHALL versionar la skill dentro de `integrations/opencode/skills/`
+y SHALL documentar su instalación manual en
+`~/.config/opencode/skills/<name>/SKILL.md`. La documentación SHALL distinguir
+esta skill propia de las skills externas opcionales, SHALL conservar la
+instalación selectiva de estas últimas y SHALL mantener alineados el README
+raíz y el README de la integración.
 
-- **WHEN** el usuario instala una skill documentada siguiendo el comando proporcionado
-- **THEN** el comando usa `--global` y `--agent opencode` y la skill queda destinada al directorio global de skills de OpenCode
+#### Scenario: Copia del respaldo portable
+- **WHEN** el usuario instala manualmente los recursos documentados
+- **THEN** puede copiar la skill propia a su directorio global sin instalar una
+  dependencia externa para ejecutar el flujo de commits
 
-#### Scenario: Instalacion selectiva
+#### Scenario: Catálogo externo separado
+- **WHEN** el usuario consulta el catálogo de skills externas
+- **THEN** puede identificar que `git-commit` ya no es una dependencia obligatoria
+  del flujo propio y que las demás skills se instalan selectivamente
 
-- **WHEN** el usuario instala el baseline o un grupo opcional
-- **THEN** el comando selecciona nombres concretos mediante `--skill` y no usa una opcion equivalente a instalar todo el repositorio
-
-#### Scenario: Precedencia del command local
-
-- **WHEN** `/commit` utiliza la skill externa `git-commit`
-- **THEN** conserva las restricciones locales de confirmacion, seguridad, staging y validacion aunque la skill externa describa un comportamiento menos restrictivo
-
-### Requirement: Documentacion coherente de superficies globales
-
-Los README del repositorio y de la integracion SHALL distinguir los recursos versionados instalables manualmente de las dependencias externas de skills, SHALL describir el mismo destino global y SHALL evitar referencias a skills OpenSpec eliminadas del respaldo. La instalacion manual del respaldo SHALL incluir todos sus recursos versionados, incluido el plugin portable.
-
-#### Scenario: README raiz y README de integracion alineados
-
-- **WHEN** el usuario consulta cualquiera de los README de instalacion
-- **THEN** encuentra una explicacion compatible sobre el respaldo versionado, las skills externas y la configuracion operativa global
-
-#### Scenario: Referencia a skill eliminada
-
-- **WHEN** el usuario sigue la instalacion global desde el README raiz
-- **THEN** no se le exige instalar `openspec-change-context-bootstrap` como dependencia del respaldo actual
-
-#### Scenario: Plugin incluido en la instalacion manual
-
-- **WHEN** el usuario copia los recursos versionados de la integracion
-- **THEN** la instruccion incluye `plugins/context-handoff.ts` ademas de las reglas, la configuracion, los agentes y los commands documentados
+#### Scenario: Eliminación del command anterior
+- **WHEN** el respaldo se sincroniza después del cambio
+- **THEN** la instalación documentada deja de incluir `commands/commit.md` y
+  conserva separados los commands restantes y los workflows locales

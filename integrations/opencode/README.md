@@ -18,31 +18,34 @@ siguiente:
 | `integrations/opencode/agents/implementer.md` | `~/.config/opencode/agents/implementer.md` |
 | `integrations/opencode/agents/reviewer.md` | `~/.config/opencode/agents/reviewer.md` |
 | `integrations/opencode/agents/integration-checker.md` | `~/.config/opencode/agents/integration-checker.md` |
-| `integrations/opencode/commands/commit.md` | `~/.config/opencode/commands/commit.md` |
 | `integrations/opencode/commands/pr.md` | `~/.config/opencode/commands/pr.md` |
 | `integrations/opencode/commands/tag.md` | `~/.config/opencode/commands/tag.md` |
+| `integrations/opencode/skills/grouped-commits/SKILL.md` | `~/.config/opencode/skills/grouped-commits/SKILL.md` |
 | `integrations/opencode/plugins/context-handoff.ts` | `~/.config/opencode/plugins/context-handoff.ts` |
 
 Los comandos de `integrations/opencode/commands/` son comandos globales. Los comandos y workflows de `.opencode/` pertenecen al proyecto consumidor y permanecen fuera de esta instalación.
 
-## Dependencias externas de skills
+## Skills propias y dependencias externas
 
-Las skills no forman parte de la copia manual de este respaldo. La carpeta
-`integrations/opencode/skills/` contiene un catálogo documental de dependencias
-externas que OpenCode puede cargar bajo demanda desde
-`~/.config/opencode/skills/`.
+`grouped-commits` es una skill propia versionada y forma parte de la copia
+manual de este respaldo. OpenCode la carga desde
+`~/.config/opencode/skills/grouped-commits/SKILL.md`.
+
+La carpeta `integrations/opencode/skills/` también contiene un catálogo
+documental de skills externas opcionales. Esas dependencias se instalan por
+separado y no son necesarias para ejecutar `grouped-commits`.
 
 Consulta el [catálogo de skills globales](skills/README.md) para conocer las
-opciones recomendadas, los límites de cada skill y los comandos selectivos de
+opciones externas, sus límites y los comandos selectivos de
 `npx skills add --global --agent opencode`. No copies el README ni ningún
-`SKILL.md` externo desde este respaldo.
+`SKILL.md` externo desde este respaldo como si fuera una skill propia.
 
 ## Instalación manual
 
 Desde la raíz del repositorio, crea las carpetas de destino si faltan y copia únicamente los recursos enumerados:
 
 ```bash
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins ~/.config/opencode/skills/grouped-commits
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
 cp integrations/opencode/agents/analyzer.md ~/.config/opencode/agents/analyzer.md
@@ -50,9 +53,9 @@ cp integrations/opencode/agents/planner.md ~/.config/opencode/agents/planner.md
 cp integrations/opencode/agents/implementer.md ~/.config/opencode/agents/implementer.md
 cp integrations/opencode/agents/reviewer.md ~/.config/opencode/agents/reviewer.md
 cp integrations/opencode/agents/integration-checker.md ~/.config/opencode/agents/integration-checker.md
-cp integrations/opencode/commands/commit.md ~/.config/opencode/commands/commit.md
 cp integrations/opencode/commands/pr.md ~/.config/opencode/commands/pr.md
 cp integrations/opencode/commands/tag.md ~/.config/opencode/commands/tag.md
+cp integrations/opencode/skills/grouped-commits/SKILL.md ~/.config/opencode/skills/grouped-commits/SKILL.md
 cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/context-handoff.ts
 ```
 
