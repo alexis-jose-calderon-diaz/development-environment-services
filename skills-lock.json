@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "openspec-apply-change": {
+      "source": "Fission-AI/OpenSpec",
+      "sourceType": "github",
+      "skillPath": "skills/openspec-apply-change/SKILL.md",
+      "computedHash": "aa6fabc8d4ad0745d276c58da0c4f2ee41b85f8c86138fcf9980eb07f064613f"
+    },
+    "openspec-archive-change": {
+      "source": "Fission-AI/OpenSpec",
+      "sourceType": "github",
+      "skillPath": "skills/openspec-archive-change/SKILL.md",
+      "computedHash": "882260b0e157ffa22908a6c865757e02e15e7b0a6c1e851eaf8ad044e5835b54"
+    },
+    "openspec-explore": {
+      "source": "Fission-AI/OpenSpec",
+      "sourceType": "github",
+      "skillPath": "skills/openspec-explore/SKILL.md",
+      "computedHash": "dacb45eafccfd4cf527ad267db534320e997294b4c37d3172d0b03c680b680a1"
+    },
+    "openspec-propose": {
+      "source": "Fission-AI/OpenSpec",
+      "sourceType": "github",
+      "skillPath": "skills/openspec-propose/SKILL.md",
+      "computedHash": "1cf27a2e36f932dee48dd1fcddfdd35c4819277798a2b36c5f0ff0a049980a24"
+    },
+    "openspec-sync-specs": {
+      "source": "Fission-AI/OpenSpec",
+      "sourceType": "github",
+      "skillPath": "skills/openspec-sync-specs/SKILL.md",
+      "computedHash": "1cbfef08e2cc8b95eca4e1542895a913b70c90947ed702f16e4504a980bfe3e7"
+    },
+    "openspec-update-change": {
+      "source": "Fission-AI/OpenSpec",
+      "sourceType": "github",
+      "skillPath": "skills/openspec-update-change/SKILL.md",
+      "computedHash": "ccc517379f6f0fbff6c8bce131689c215331051ae6d078a721f63c97ade6bd3a"
+    },
+    "openspec-verify-change": {
+      "source": "Fission-AI/OpenSpec",
+      "sourceType": "github",
+      "skillPath": "skills/openspec-verify-change/SKILL.md",
+      "computedHash": "00cb8d751ab2a7dbd537a62a6f609da79ea2a825a5e2c235ea74dbb2ac210021"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/skill-creator/SKILL.md",
+      "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
+    }
+  }
+}
