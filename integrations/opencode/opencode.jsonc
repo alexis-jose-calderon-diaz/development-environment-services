@@ -3,67 +3,51 @@
   "formatter": {
     "csharpier": {
       "command": ["dotnet", "csharpier", "format", "$FILE"],
-      "extensions": [".cs"],
-    },
+      "extensions": [".cs"]
+    }
   },
-  "provider": {
+  "providers": {
     "openai": {
       "models": {
         "gpt-5.6-luna": {
-          "limit": {
-            "context": 400000,
-            "input": 384000,
-            "output": 16000,
-          },
-        },
-      },
-    },
+          "limit": { "context": 400000, "input": 384000, "output": 16000 }
+        }
+      }
+    }
   },
   "lsp": true,
-  "plugin": ["opencode-pty"],
-  "permission": {
-    "question": "allow",
-    "external_directory": {
-      "*": "ask",
-      "/tmp/**": "allow",
-      "~/.nuget/**": "allow",
-      "/workspace/**": "allow",
-    },
-    "bash": {
-      "rm *": "ask",
-      "rmdir *": "ask",
-      "unlink *": "ask",
-      "git clean *": "ask",
-      "find * -delete*": "ask",
-      "git add *": "ask",
-      "git commit *": "ask",
-      "git push *": "ask",
-      "git reset *": "ask",
-      "git restore *": "ask",
-    },
-  },
+  "permissions": [
+    { "action": "question", "resource": "*", "effect": "allow" },
+    { "action": "external_directory", "resource": "*", "effect": "ask" },
+    { "action": "external_directory", "resource": "/tmp/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.nuget/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "/workspace/**", "effect": "allow" },
+    { "action": "shell", "resource": "rm *", "effect": "ask" },
+    { "action": "shell", "resource": "rmdir *", "effect": "ask" },
+    { "action": "shell", "resource": "unlink *", "effect": "ask" },
+    { "action": "shell", "resource": "git clean *", "effect": "ask" },
+    { "action": "shell", "resource": "find * -delete*", "effect": "ask" },
+    { "action": "shell", "resource": "git add *", "effect": "ask" },
+    { "action": "shell", "resource": "git commit *", "effect": "ask" },
+    { "action": "shell", "resource": "git push *", "effect": "ask" },
+    { "action": "shell", "resource": "git reset *", "effect": "ask" },
+    { "action": "shell", "resource": "git restore *", "effect": "ask" }
+  ],
   "mcp": {
-    "context7": {
-      "type": "remote",
-      "url": "https://mcp.context7.com/mcp",
-      "headers": {
-        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}",
+    "servers": {
+      "context7": {
+        "type": "remote",
+        "url": "https://mcp.context7.com/mcp",
+        "oauth": false,
+        "headers": { "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}" },
+        "disabled": false
       },
-      "enabled": true,
-    },
-    "postgres": {
-      "type": "local",
-      "command": [
-        "uvx",
-        "--with",
-        "mcp[cli]<2",
-        "postgres-mcp",
-        "--access-mode=restricted",
-      ],
-      "environment": {
-        "DATABASE_URI": "{env:DATABASE_URI}",
-      },
-      "enabled": true,
-    },
-  },
+      "postgres": {
+        "type": "local",
+        "command": ["uvx", "--with", "mcp[cli]<2", "postgres-mcp", "--access-mode=restricted"],
+        "environment": { "DATABASE_URI": "{env:DATABASE_URI}" },
+        "disabled": false
+      }
+    }
+  }
 }
