@@ -1,0 +1,55 @@
+{
+  "skill_name": "integration-boundary-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audita si un cambio de contrato HTTP encaja entre el backend, el cliente y las pruebas. Revisa nombres, tipos, respuestas, errores y consumidores relacionados; no apliques correcciones.",
+      "expected_output": "Un informe que verifica únicamente las fronteras relevantes, marca PASS/FAIL/NO VERIFICADA con evidencia y reporta incompatibilidades sin editar.",
+      "files": [
+        "evals/files/http/backend.py",
+        "evals/files/http/openapi.yaml",
+        "evals/files/http/client.ts",
+        "evals/files/http/test_client.ts"
+      ],
+      "expectations": [
+        "Compara implementación, contrato, consumidor y tests con evidencia concreta.",
+        "No marca como PASS una frontera cuya evidencia no pudo verificarse.",
+        "Detecta que backend.py expone display_name mientras el contrato, cliente y test consumen displayName, y clasifica el estado global como BLOCKED o FAIL según si requiere una decisión de contrato.",
+        "No modifica archivos ni aplica parches."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Comprueba la integración de un campo nuevo entre modelo, persistencia, migración y código generado. Si la migración no es reversible o falta una decisión de compatibilidad de datos, informa el bloqueo en vez de escoger una solución.",
+      "expected_output": "Una auditoría centrada en modelo/persistencia/migraciones/salidas generadas que mantiene BLOCKED cuando hace falta una decisión de diseño.",
+      "files": [
+        "evals/files/model/model.py",
+        "evals/files/model/schema.sql",
+        "evals/files/model/migration.sql",
+        "evals/files/model/generated.ts"
+      ],
+      "expectations": [
+         "Verifica explícitamente las fronteras Modelo → Persistencia, Persistencia → Migraciones y Modelo → Salidas generadas.",
+        "Expone la evidencia faltante y el impacto de la compatibilidad de datos.",
+        "Mantiene BLOCKED porque la migración deja pendiente la estrategia para filas existentes y la nulabilidad/default no coincide entre modelo, esquema y generado.",
+        "No inventa una corrección ni edita el repositorio."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Mezclé en una misma petición una auditoría de integración y una limpieza general de estilo. Audita solo las fronteras necesarias para que las piezas encajen y excluye la inspección de estilo.",
+      "expected_output": "Un informe acotado a interfaces y consumidores, que no convierte la auditoría en revisión de estilo ni de calidad interna general.",
+      "files": [
+        "evals/files/style/api.py",
+        "evals/files/style/client.ts",
+        "evals/files/style/notes.md"
+      ],
+      "expectations": [
+        "Mantiene fuera de alcance la limpieza de estilo.",
+        "Verifica solo fronteras relevantes para el cambio.",
+        "No reporta la diferencia de formato como hallazgo porque no cambia una interfaz o contrato consumido.",
+        "Reporta riesgos o evidencia faltante sin aplicar cambios."
+      ]
+    }
+  ]
+}

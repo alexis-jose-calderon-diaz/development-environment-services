@@ -13,23 +13,17 @@ siguiente:
 | --- | --- |
 | `integrations/opencode/AGENTS.md` | `~/.config/opencode/AGENTS.md` |
 | `integrations/opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
-| `integrations/opencode/agents/analyzer.md` | `~/.config/opencode/agents/analyzer.md` |
-| `integrations/opencode/agents/planner.md` | `~/.config/opencode/agents/planner.md` |
-| `integrations/opencode/agents/implementer.md` | `~/.config/opencode/agents/implementer.md` |
-| `integrations/opencode/agents/reviewer.md` | `~/.config/opencode/agents/reviewer.md` |
-| `integrations/opencode/agents/integration-checker.md` | `~/.config/opencode/agents/integration-checker.md` |
 | `integrations/opencode/commands/pr.md` | `~/.config/opencode/commands/pr.md` |
 | `integrations/opencode/commands/tag.md` | `~/.config/opencode/commands/tag.md` |
-| `integrations/opencode/plugins/context-handoff.ts` | `~/.config/opencode/plugins/context-handoff.ts` |
 
 Los comandos de `integrations/opencode/commands/` son comandos globales. Los comandos y workflows de `.opencode/` pertenecen al proyecto consumidor y permanecen fuera de esta instalación.
 
 ## Skills públicas y dependencias externas
 
-`grouped-commits` es una skill pública versionada en `/skills/` y no forma parte
-de la copia manual de este respaldo. Instálala y actualízala con el CLI `skills`
-siguiendo el [catálogo público](../../skills/README.md), que también documenta
-las dependencias externas opcionales.
+Las skills públicas versionadas en `/skills/` no forman parte de la copia manual
+de este respaldo. Instálalas y actualízalas con el CLI `skills` siguiendo el
+[catálogo público](../../skills/README.md), que también documenta las
+dependencias externas opcionales.
 
 No copies un README ni un `SKILL.md` desde `integrations/opencode/` como si
 fuera una skill pública. La superficie `./.agents/` pertenece al workflow
@@ -40,17 +34,11 @@ interno y queda fuera de esta integración.
 Desde la raíz del repositorio, crea las carpetas de destino si faltan y copia únicamente los recursos enumerados:
 
 ```bash
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
+mkdir -p ~/.config/opencode/commands
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
-cp integrations/opencode/agents/analyzer.md ~/.config/opencode/agents/analyzer.md
-cp integrations/opencode/agents/planner.md ~/.config/opencode/agents/planner.md
-cp integrations/opencode/agents/implementer.md ~/.config/opencode/agents/implementer.md
-cp integrations/opencode/agents/reviewer.md ~/.config/opencode/agents/reviewer.md
-cp integrations/opencode/agents/integration-checker.md ~/.config/opencode/agents/integration-checker.md
 cp integrations/opencode/commands/pr.md ~/.config/opencode/commands/pr.md
 cp integrations/opencode/commands/tag.md ~/.config/opencode/commands/tag.md
-cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/context-handoff.ts
 ```
 
 Estas operaciones son manuales, no un instalador automático. Revisa el contenido y las diferencias antes de copiar. La configuración global instalada coexiste con el `AGENTS.md` raíz y la configuración local del proyecto consumidor; conserva sus reglas locales y no las reemplaces.
@@ -72,4 +60,9 @@ No se proporcionan scripts, enlaces simbólicos ni copias automáticas. Reinicia
 
 ## Limpieza manual
 
-Una instalación anterior puede conservar recursos que ya no pertenecen al conjunto enumerado. Identifícalos mediante la comparación entre `integrations/opencode/` y `~/.config/opencode/`, revisa cada diferencia antes de eliminarla y confirma que no sea un recurso local deliberado. Elimina manualmente solo los recursos obsoletos de `~/.config/opencode/`; esta documentación no realiza esa limpieza ni borra recursos locales.
+Una instalación anterior puede conservar agentes personalizados o el plugin de
+contexto que ya no pertenecen al conjunto enumerado. Identifícalos mediante la
+comparación entre `integrations/opencode/` y `~/.config/opencode/`, revisa cada
+diferencia antes de eliminarla y confirma que no sea un recurso local deliberado.
+Elimina manualmente solo los recursos obsoletos de `~/.config/opencode/`; esta
+documentación no realiza esa limpieza ni borra recursos locales.

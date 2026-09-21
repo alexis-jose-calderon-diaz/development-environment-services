@@ -17,54 +17,21 @@ Estas reglas aplican únicamente a los recursos incluidos en este scope. No asum
 - Accede fuera del `workdir` solo como último recurso necesario, limita la operación al recurso concreto y justifica el motivo.
 - El acceso externo no amplía el `Scope` autorizado ni justifica explorar otras áreas.
 
-## Agentes portables
+## Skills públicas y delegación
 
-Estos cinco agentes forman el conjunto portable. Sus archivos individuales contienen el método, los límites detallados y el formato de salida de cada rol.
+Las skills públicas reutilizables se versionan bajo `skills/` y se instalan o
+actualizan por separado mediante el CLI `skills`. No copies `./.agents/` ni
+trates esta guía como el origen de esas skills.
 
-| Agente | Uso principal | Edición |
-| --- | --- | --- |
-| `analyzer` | Estado, impacto, superficie y riesgos | Solo lectura |
-| `planner` | Plan verificable a partir del análisis | Solo lectura |
-| `implementer` | Una unidad atómica y su validación | Edición acotada |
-| `reviewer` | Resultado contra objetivo, alcance y criterios | Solo lectura |
-| `integration-checker` | Fronteras y correcciones de integración | Edición acotada |
+Las skills son instrucciones para el agente actual. Sus límites read-only son
+contratos de comportamiento, no sustitutos de los permisos efectivos del
+runtime. Cuando una tarea requiera aislamiento estricto, usa un agente o modo
+con permisos adecuados y no presentes la skill como una garantía de seguridad.
 
-Consulta `agents/<name>.md` para el contrato completo; no dupliques sus procedimientos en esta guía.
-
-## Delegación
-
-El orquestador entrega un prompt autocontenido y proporcional a la tarea. Transporta solo hechos, decisiones, dependencias y criterios que condicionen el trabajo.
-
-Incluye, cuando sean necesarios para delimitar y validar la subtarea:
-
-- `Objective`
-- `Scope`
-- `Out of Scope`
-- `Repository Context`
-- `Relevant Files`
-- `Existing Behavior`
-- `Desired Behavior`
-- `Constraints`
-- `Decisions Already Made`
-- `Dependencies`
-- `Acceptance Criteria`
-- `Verification`
-
-No transportes historiales, razonamientos completos ni contenido irrelevante. Si falta información para actuar dentro de un límite seguro, declárala en lugar de asumirla.
-
-### Continuación tras HANDOFF de presupuesto
-
-**Regla obligatoria: `HANDOFF => nueva sesión hija`.** Cuando un worker delegado devuelve una respuesta de nivel superior `## HANDOFF` porque agotó su presupuesto de contexto, el objetivo sigue incompleto y la sesión que emitió el HANDOFF queda agotada y es terminal para esa delegación.
-
-- No reanudes esa sesión ni reutilices su `task_id` o cualquier identificador equivalente de continuación.
-- Crea una nueva `Task` con el tipo de agente apropiado y omite el `task_id` anterior. El mismo tipo de agente, como `implementer`, puede usarse otra vez, pero la sesión debe ser nueva.
-- Construye para el nuevo worker un paquete compacto basado en el HANDOFF más reciente y conserva el objetivo delegado original en una sección separada. Incluye, cuando sean relevantes, `Completed`, `Remaining`, `Decisions`, `Files changed`, `Relevant files`, riesgos o hallazgos no resueltos, `Verification`, `Next action` y las restricciones parentales necesarias. No sustituyas ese estado por un resumen genérico como “continúa la tarea” ni copies la conversación completa, invocaciones, dumps de archivos o hipótesis descartadas.
-- Para workers de análisis, conserva los hallazgos confirmados, decisiones, riesgos, rutas relevantes y preguntas pendientes aunque no estén persistidos en archivos. Para workers de implementación, conserva los archivos cambiados, decisiones no obvias, estado de verificación y trabajo restante, sin obligar a redescubrir por qué se hicieron cambios.
-- Indica al nuevo worker que verifique solo el estado actual del repositorio relevante para `Remaining` o `Next action`. El repositorio es la fuente de verdad si contradice el HANDOFF; investiga solo esa discrepancia. No repita trabajo listado como `Completed` salvo que falte, esté obsoleto, sea incorrecto o sea inconsistente con el estado actual.
-- Trata cada HANDOFF posterior de la misma manera: crea otra sesión nueva sin reutilizar identificadores, sin límite artificial de encadenamiento, y pasa el objetivo original junto con el estado rolling compacto actualmente relevante. No anides HANDOFF completos ni agregues historiales entre continuaciones.
-- Un HANDOFF no es finalización ni bloqueo: no reportes éxito, no avances a revisión y no solicites confirmación al usuario. Si contiene además un bloqueo genuino, aplica el manejo existente para ese bloqueo.
-
-Una respuesta normal sin HANDOFF puede continuar en la sesión existente mediante su `task_id` cuando el orquestador necesite un seguimiento intencional. Esta excepción no aplica a una sesión que ya emitió un HANDOFF.
+No se proporcionan agentes personalizados ni un protocolo portable de
+continuación de sesiones en este scope. Los comandos globales restantes deben
+operar sobre la petición actual y no asumir roles, ownership o workflows
+externos.
 
 ## Coordinación y salida
 

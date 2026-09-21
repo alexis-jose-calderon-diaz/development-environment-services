@@ -1,0 +1,39 @@
+{
+  "skill_name": "change-impact-analysis",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Analiza el impacto de migrar los agentes portables de `integrations/opencode/agents/` a skills públicas bajo `skills/` en este repositorio. Antes de implementar nada, identifica la superficie afectada, consumidores, riesgos y evidencia faltante.",
+      "expected_output": "Un informe read-only que localiza los agentes, documentación, plugin de contexto, catálogo de skills y especificaciones relacionadas, distingue hechos de incertidumbres y no propone pasos detallados de implementación.",
+      "files": [],
+      "expectations": [
+        "Identifica archivos y superficies directamente relacionadas con la migración.",
+        "Distingue evidencia confirmada de incertidumbres o consumidores no verificados.",
+        "No modifica archivos ni convierte el informe en un plan de implementación detallado.",
+        "Trata los artifacts OpenSpec relevantes como documentación opcional y no exige usar el CLI ni un protocolo OpenSpec."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "En este repositorio queremos añadir una variable de entorno al servicio PostgreSQL de Docker Compose. Analiza qué configuración, documentación, consumidores y validaciones podrían verse afectados sin editar nada.",
+      "expected_output": "Un análisis proporcional que inspecciona Compose y sus documentos o consumidores directos, clasifica la complejidad y señala riesgos sin explorar áreas irrelevantes.",
+      "files": [],
+      "expectations": [
+        "Inspecciona primero la superficie Docker/servicios relevante.",
+        "Explica por qué cada archivo o consumidor incluido está relacionado.",
+        "Mantiene el análisis read-only, propone solo comprobaciones estáticas sin efectos secundarios y registra brechas de evidencia."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Solo necesito corregir una errata en una línea de documentación. Indica si el cambio requiere dividirse y qué impacto tiene, sin convertirlo en una implementación ni editar el archivo.",
+      "expected_output": "Un análisis Low, proporcional, que recomienda resolverlo directamente y no inventa consumidores o una descomposición innecesaria.",
+      "files": [],
+      "expectations": [
+        "Clasifica una corrección aislada como de baja complejidad.",
+        "Recomienda una solución directa sin cantidades, agentes, ownership ni coordinación operativa.",
+        "Entrega una salida proporcional y breve, sin inventar una superficie amplia ni realizar cambios."
+      ]
+    }
+  ]
+}

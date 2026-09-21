@@ -1,0 +1,62 @@
+{
+  "skill_name": "change-planning",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Prepara un plan para migrar los cinco agentes portables de este repositorio a skills públicas, validar las skills y retirar el plugin de HANDOFF. No existe un Analysis Report previo; inspecciona lo necesario y no implementes cambios.",
+      "expected_output": "Un plan autosuficiente con unidades exclusivas, dependencias, grupos paralelos/secuenciales, validaciones, integración y riesgos, sin bloquear por la ausencia de un informe previo.",
+      "files": [],
+      "expectations": [
+        "El plan no exige un Analysis Report ni una delegación previa.",
+        "Separa creación, validación, documentación y retirada según sus dependencias reales cuando sus archivos o criterios difieren.",
+        "Cada unidad tiene Scope, Out of Scope y una validación concreta.",
+        "El plan es autosuficiente, read-only y no exige delegación."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Necesito planificar una corrección pequeña para cambiar el texto de una única opción de configuración en un archivo. Decide si conviene dividir el trabajo y presenta un plan verificable sin editar.",
+      "expected_output": "Un plan de una sola unidad, sin coordinación artificial, con alcance limitado y una validación focalizada.",
+      "files": [],
+      "expectations": [
+        "Recomienda una única unidad cuando dividir no aporta beneficio.",
+        "Mantiene el archivo dentro de un Scope exclusivo.",
+        "Define una validación concreta y no implementa el cambio."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Planifica la incorporación de un campo nuevo a una API, su persistencia, migración, cliente y pruebas. Identifica qué puede ejecutarse en paralelo y qué debe ser secuencial, y detente si falta una decisión de compatibilidad.",
+      "expected_output": "Un plan que respeta contratos y fronteras, explicita dependencias entre migración/API/cliente/tests y marca la decisión de compatibilidad como punto de control si no puede confirmarse.",
+      "files": [],
+      "expectations": [
+        "Distingue unidades paralelas de dependencias secuenciales con razones.",
+        "No asigna el mismo archivo o área modificable a dos unidades.",
+        "Expone decisiones de compatibilidad no resueltas como bloqueo o punto de decisión."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Planifica el cambio solicitado, pero la petición no indica qué archivo contiene la opción ni qué comportamiento de compatibilidad debe conservarse. No hagas una exploración global: detente con el plan mínimo y dime exactamente qué falta.",
+      "expected_output": "Un informe mínimo BLOCKED que solicita únicamente la ruta y la decisión de compatibilidad faltantes, sin inventar datos ni explorar el repositorio.",
+      "files": [],
+      "expectations": [
+        "Marca el plan como BLOCKED.",
+        "Pide exactamente la ruta y la decisión esenciales que faltan.",
+        "No realiza ni propone exploración global ni rellena los datos con supuestos."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Planifica un cambio con un contrato compartido, dos consumidores independientes, documentación en otro archivo, una validación con criterios propios y una retirada posterior. El contrato debe tener un único propietario y una unidad dependiente por consumidor.",
+      "expected_output": "Un plan que asigna el contrato a una unidad propietaria, declara los consumidores como dependencias, mantiene independientes las unidades posibles y separa documentación, validación y retirada cuando sus archivos o criterios difieren.",
+      "files": [],
+      "expectations": [
+        "Un único propietario modifica el contrato compartido.",
+        "Cada consumidor declara dependencia del contrato y conserva un área exclusiva.",
+        "Documentación, validación y retirada aparecen como unidades separadas cuando tienen archivos o criterios distintos.",
+        "Las unidades independientes siguen planificadas aunque otra unidad dependiente quede bloqueada."
+      ]
+    }
+  ]
+}

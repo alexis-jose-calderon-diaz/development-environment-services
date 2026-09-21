@@ -1,0 +1,41 @@
+{
+  "skill_name": "change-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Revisa los cambios actuales de este repositorio contra el objetivo de migrar agentes portables a skills públicas. Comprueba alcance, documentación, referencias al plugin y criterios de eliminación; no edites nada.",
+      "expected_output": "Un informe read-only con estado, findings basados en evidencia, incertidumbres, brechas de pruebas y recomendaciones, sin aplicar correcciones.",
+      "files": [],
+      "expectations": [
+        "Comienza con git status --short --untracked-files=all y después inspecciona el diff y los archivos modificados.",
+        "Incluye archivos añadidos no trackeados cuando formen parte del cambio.",
+        "Cada finding confirmado incluye ubicación, evidencia, criterio, impacto y recomendación.",
+        "No crea, edita ni elimina archivos."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Haz una revisión genérica de la implementación actual de una función de autenticación contra este objetivo: rechazar credenciales inválidas sin revelar secretos y mantener compatibilidad con clientes existentes. No uses OpenSpec y no modifiques código.",
+      "expected_output": "Una revisión que funciona sin workflow formal, contrasta el objetivo observable y separa hallazgos confirmados de incertidumbres.",
+      "files": [],
+      "expectations": [
+        "No exige un identificador OpenSpec ni un informe de otro agente.",
+        "No presenta una sospecha sin evidencia como finding confirmado.",
+        "Declara el contexto faltante si no puede verificar la implementación.",
+        "Si una búsqueda focalizada no encuentra la implementación esencial, usa BLOCKED, documenta qué revisó y pide ruta, diff o evidencia."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Revisa un cambio cuyo alcance mezcla una migración de base de datos, una refactorización de frontend y una actualización independiente de documentación. Determina si la revisión necesita dividirse y no corrijas los archivos.",
+      "expected_output": "Un informe que identifica un alcance demasiado amplio o revisiones separables y propone dividirlas cuando impida conclusiones confiables.",
+      "files": [],
+      "expectations": [
+        "Detecta cuando el pedido mezcla superficies independientes.",
+        "Usa NEEDS SPLIT solo con una razón concreta de alcance o evidencia.",
+        "Enumera cada revisión separada y el criterio que se evaluará en cada una.",
+        "Mantiene el modo read-only."
+      ]
+    }
+  ]
+}

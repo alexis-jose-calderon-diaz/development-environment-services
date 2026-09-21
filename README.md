@@ -70,20 +70,18 @@ La instalación global de OpenCode no es necesaria para operar los servicios. Si
 ```bash
 git clone https://github.com/alexis-jose-calderon-diaz/development-environment-services.git
 cd development-environment-services
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
+mkdir -p ~/.config/opencode/commands
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
-cp integrations/opencode/agents/*.md ~/.config/opencode/agents/
 cp integrations/opencode/commands/*.md ~/.config/opencode/commands/
-cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/
 ```
 
 Revisa y combina `AGENTS.md` con las reglas globales existentes antes de
 reemplazarlo. Las skills públicas se instalan y actualizan por separado con
 `npx skills`, no mediante esta copia manual. Consulta el [catálogo público de
-skills](skills/README.md) para instalar `grouped-commits` o skills externas de
-forma global y neutral. Para comparar y mantener ambas ubicaciones, consulta la
-[guía de integración](integrations/opencode/README.md).
+skills](skills/README.md) para instalar las skills versionadas de forma global y
+neutral. Para comparar y mantener ambas ubicaciones, consulta la [guía de
+integración](integrations/opencode/README.md).
 
 ## Operación y validación
 

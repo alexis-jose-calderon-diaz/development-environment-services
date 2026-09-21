@@ -49,141 +49,83 @@ El orquestador SHALL entregar a cada sub-agente un prompt autocontenido y propor
 - **WHEN** los resultados de agentes anteriores contienen razonamientos o detalles que no condicionan la subtarea siguiente
 - **THEN** el orquestador conserva solo las conclusiones, decisiones y dependencias relevantes en el prompt delegado
 
+### Requirement: Skills portables de análisis y planificación
+
+La superficie pública SHALL proporcionar skills independientes y autosuficientes para analizar el impacto de un cambio y preparar un plan de ejecución. `change-impact-analysis` SHALL operar en modo read-only, identificar la superficie directamente relevante, riesgos, consumidores y complejidad, y distinguir hechos confirmados de incertidumbres. `change-planning` SHALL poder iniciar su propia inspección proporcional cuando el usuario pida un plan y SHALL producir unidades, dependencias, modos de ejecución y validaciones sin exigir un informe interno de otro agente.
+
+#### Scenario: Análisis de impacto solicitado por el usuario
+
+- **WHEN** el usuario pide evaluar el impacto, alcance o riesgos de un cambio antes de implementarlo
+- **THEN** `change-impact-analysis` devuelve un análisis fundamentado en el repositorio actual sin modificar archivos
+
+#### Scenario: Plan solicitado sin contexto de orquestador
+
+- **WHEN** el usuario pide un plan técnico para una tarea y no proporciona un `Analysis Report` previo
+- **THEN** `change-planning` inspecciona el contexto mínimo necesario y devuelve un plan verificable sin bloquear por la ausencia de una delegación previa
+
+#### Scenario: Tarea pequeña
+
+- **WHEN** la tarea no obtiene beneficio real de dividirse
+- **THEN** la skill de planificación recomienda una única unidad en lugar de crear coordinación artificial
+
+### Requirement: Skills portables de revisión e integración
+
+La superficie pública SHALL proporcionar una skill para revisar cambios contra un objetivo y sus criterios, y una skill para auditar fronteras de integración. `change-review` SHALL ser read-only por contrato, priorizar incumplimientos con evidencia y distinguir hallazgos confirmados, incertidumbres, riesgos residuales y brechas de pruebas. `integration-boundary-audit` SHALL limitarse a comprobar coherencia entre módulos, contratos, consumidores, persistencia, salidas generadas y tests; no SHALL aplicar correcciones automáticamente.
+
+#### Scenario: Revisión contra criterios
+
+- **WHEN** el usuario pide revisar un diff o una implementación con un objetivo y criterios disponibles
+- **THEN** `change-review` informa hallazgos accionables con ubicación, evidencia, impacto y recomendación, sin editar archivos
+
+#### Scenario: Revisión sin workflow formal
+
+- **WHEN** el usuario pide una revisión genérica sin especificación OpenSpec
+- **THEN** `change-review` usa el objetivo, el alcance y la evidencia disponible sin exigir un identificador o workflow externo
+
+#### Scenario: Auditoría de fronteras
+
+- **WHEN** el usuario pide verificar que varias piezas de un cambio distribuido encajan entre sí
+- **THEN** `integration-boundary-audit` comprueba únicamente las fronteras relevantes y marca como no verificadas las que carecen de evidencia suficiente
+
+#### Scenario: Problema que requiere una decisión de diseño
+
+- **WHEN** una incompatibilidad no puede resolverse sin cambiar una decisión pública o ampliar el alcance
+- **THEN** la auditoría informa el bloqueo y no modifica archivos ni inventa una corrección
+
+### Requirement: Límites explícitos de las skills frente a los permisos
+
+Las skills migradas SHALL documentar que sus instrucciones read-only no constituyen un aislamiento de permisos equivalente al de un agente configurado. La documentación SHALL indicar que el agente seleccionado y sus permisos efectivos siguen siendo responsables de impedir ediciones, delegaciones u operaciones no autorizadas.
+
+#### Scenario: Carga de una skill read-only en un agente con edición
+
+- **WHEN** el agente actual tiene permisos de edición y carga `change-review` o `integration-boundary-audit`
+- **THEN** la skill conserva la instrucción de no editar, pero la documentación no presenta esa instrucción como una garantía de seguridad del runtime
+
+#### Scenario: Uso de una skill en Plan mode
+
+- **WHEN** el usuario quiere una revisión estrictamente sin modificaciones y utiliza un agente con permisos read-only
+- **THEN** la skill puede ejecutarse dentro de ese límite efectivo y devolver solo el informe solicitado
+
 ### Requirement: Agentes de rol reutilizables
 
-Los agentes portables SHALL conservar responsabilidades diferenciadas para analizar, planificar, implementar, revisar e integrar, pero SHALL operar sobre el contexto recibido en lugar de depender de una skill auxiliar para activar o validar un workflow especifico. `reviewer` SHALL poder revisar tareas genericas y cambios con criterios contractuales incluidos en el contexto.
+La integración portable SHALL dejar de proporcionar agentes personalizados para analizar, planificar, implementar, revisar e integrar. En su lugar, SHALL proporcionar skills públicas autosuficientes para los flujos de análisis de impacto, planificación, revisión y auditoría de integración. Esas skills SHALL operar sobre la petición del usuario y el estado actual del repositorio, sin depender de un prompt de orquestador, un informe interno previo, un identificador externo o un `Scope` delegado implícito.
 
-#### Scenario: Revision de tarea generica
+Las skills de análisis y revisión SHALL conservar la disciplina de contexto mínimo, alcance, evidencia, validación y riesgos. La auditoría de integración SHALL ser read-only y no SHALL sustituir la coordinación de ownership que antes correspondía a un agente delegado.
 
-- **WHEN** `reviewer` recibe un objetivo, un scope, criterios de aceptacion y un diff sin una especificacion externa
+#### Scenario: Flujo de análisis sin agente personalizado
+
+- **WHEN** los agentes portables personalizados no están instalados
+- **THEN** el usuario puede cargar una skill pública para analizar el cambio y obtener un informe basado en el contexto disponible
+
+#### Scenario: Flujo de revisión genérica
+
+- **WHEN** `change-review` recibe un objetivo, un alcance, criterios de aceptación y un diff sin una especificación externa
 - **THEN** identifica hallazgos concretos contra ese contexto y devuelve su informe sin bloquear por la ausencia de un workflow formal
 
-#### Scenario: Ausencia de skills auxiliares
+#### Scenario: Flujo de integración sin corrección automática
 
-- **WHEN** las skills auxiliares de contexto no estan instaladas
-- **THEN** los agentes pueden ejecutar sus responsabilidades usando `AGENTS.md`, su contrato de rol y el prompt delegado
-
-### Requirement: Implementer respects context budget signals
-
-El agente `implementer` SHALL tratar como autoritarias únicamente las señales
-runtime explícitas `[context-handoff:budget]:SOFT` y
-`[context-handoff:budget]:HARD`. No SHALL estimar, contar ni inferir su propio
-uso de tokens.
-
-#### Scenario: Operacion normal sin señal
-
-- **WHEN** la solicitud no contiene una señal de presupuesto
-- **THEN** el agente ejecuta su ciclo existente, valida el cambio y devuelve su
-  formato normal sin iniciar un HANDOFF
-
-#### Scenario: Alcance del limite blando
-
-- **WHEN** la solicitud contiene `[context-handoff:budget]:SOFT`
-- **THEN** el agente evita exploracion amplia y trabajo no relacionado, prioriza
-  terminar la unidad coherente actual, persiste cambios utiles y usa
-  verificacion dirigida sin estar obligado a devolver un HANDOFF
-
-#### Scenario: Alcance del limite duro
-
-- **WHEN** la solicitud contiene `[context-handoff:budget]:HARD`
-- **THEN** el agente detiene inmediatamente la implementacion, exploracion y
-  verificacion adicional, no ejecuta mas herramientas y devuelve un HANDOFF en
-  lugar de continuar el ciclo normal
-
-#### Scenario: Herramienta bloqueada por el limite duro
-
-- **WHEN** el runtime rechaza una herramienta con `CONTEXT_BUDGET_HARD_STOP`
-- **THEN** el agente no reintenta la herramienta ni usa otra equivalente y
-  devuelve el HANDOFF con la informacion disponible
-
-### Requirement: HANDOFF durable y estructurado
-
-Cuando el presupuesto alcanza HARD, el agente SHALL devolver exactamente un
-encabezado superior `## HANDOFF` y las secciones `Objective`, `Completed`,
-`Remaining`, `Decisions`, `Files changed`, `Relevant files`, `Verification` y
-`Next action`. El contenido SHALL describir el estado persistido de forma
-concisa y accionable, sin reproducir la conversacion ni el contenido completo
-de los archivos.
-
-#### Scenario: Trabajo parcialmente completado
-
-- **WHEN** HARD aparece antes de completar el objetivo delegado
-- **THEN** `Completed` enumera solo cambios persistidos, `Remaining` enumera
-  tareas concretas pendientes y `Next action` contiene una unica primera accion
-  ejecutable
-
-#### Scenario: Verificacion interrumpida
-
-- **WHEN** HARD impide ejecutar una comprobacion pendiente
-- **THEN** `Verification` la marca explícitamente como `NOT RUN` y la incluye en
-  `Remaining` cuando sea necesaria para completar el objetivo
-
-#### Scenario: Continuacion fuera del agente
-
-- **WHEN** el agente devuelve un HANDOFF
-- **THEN** no crea, delega ni invoca otra sesion y no solicita decision del
-  usuario sobre la continuacion
-
-### Requirement: Continuacion de HANDOFF en una sesion hija nueva
-
-Cuando un worker delegado devuelve una respuesta superior `## HANDOFF` por agotamiento de contexto, el orquestador SHALL tratar el objetivo como incompleto y SHALL crear una nueva sesion hija para continuar. La sesion que emitio el HANDOFF SHALL considerarse agotada y no SHALL reanudarse para ese objetivo.
-
-Al crear la sesion hija, el orquestador SHALL conservar por separado el objetivo delegado original y construir un paquete compacto de continuacion a partir del HANDOFF mas reciente. El paquete SHALL incluir, cuando sean relevantes, el estado `Completed`, el trabajo `Remaining`, las `Decisions`, `Files changed`, `Relevant files`, riesgos o hallazgos no resueltos, `Verification`, `Next action` y las restricciones parentales necesarias. No SHALL sustituir ese estado por un resumen generico ni copiar la conversacion completa.
-
-El orquestador SHALL mantener ese paquete como estado rolling actualizado entre HANDOFF encadenados, sin anidar historiales completos. El worker nuevo SHALL verificar solo el estado actual del repositorio relacionado con la continuacion, tratar el repositorio como fuente de verdad ante una discrepancia y no repetir trabajo completado salvo que falte, este obsoleto, sea incorrecto o resulte inconsistente. Este comportamiento SHALL preservar tambien conclusiones de exploracion que no esten persistidas en archivos.
-
-#### Scenario: HANDOFF obliga a crear una sesion nueva
-
-- **WHEN** un worker devuelve un `## HANDOFF` causado por el limite duro de contexto
-- **THEN** el orquestador crea una nueva `Task` sin pasar el `task_id` ni otro identificador de continuacion del worker anterior
-
-#### Scenario: El tipo de agente puede repetirse sin reutilizar la sesion
-
-- **WHEN** la subtarea pendiente sigue correspondiendo al mismo rol, como `implementer`
-- **THEN** la nueva sesion puede usar la misma definicion de agente, pero recibe un contexto de worker independiente y fresco
-
-#### Scenario: La continuacion conserva el objetivo y el estado operativo
-
-- **WHEN** el orquestador crea el worker posterior al HANDOFF
-- **THEN** le entrega el objetivo delegado original, el estado relevante de `Completed`, `Remaining`, `Decisions`, archivos, riesgos, `Verification` y `Next action`, junto con las restricciones parentales necesarias, sin copiar la conversacion completa
-
-#### Scenario: El repositorio valida el HANDOFF de forma dirigida
-
-- **WHEN** el nuevo worker comienza la continuacion
-- **THEN** verifica solo el estado actual del repositorio relevante para `Remaining` o `Next action`, trata ese estado como fuente de verdad y no repite trabajo listado como completado salvo que falte o sea incorrecto
-
-#### Scenario: Una exploracion conserva conocimiento no persistido
-
-- **WHEN** un worker de analisis devuelve un HANDOFF con hallazgos confirmados, decisiones, riesgos, rutas relevantes o preguntas pendientes que no quedaron escritos en archivos
-
-- **THEN** el paquete de continuacion transfiere esos elementos relevantes al worker exploratorio nuevo y le permite continuar sin volver a mapear ampliamente el repositorio
-
-#### Scenario: Una implementacion conserva progreso y decisiones
-
-- **WHEN** un worker de implementacion devuelve un HANDOFF despues de modificar archivos o ejecutar verificaciones
-
-- **THEN** el worker nuevo recibe los archivos cambiados, las decisiones no obvias, el estado de verificacion y el trabajo restante, inspecciona su estado actual y continua sin recrear cambios ya persistidos
-
-#### Scenario: HANDOFF encadenado usa estado rolling compacto
-
-- **WHEN** un worker creado para continuar tambien devuelve un `## HANDOFF`
-- **THEN** el orquestador vuelve a crear otra sesion hija nueva sin reutilizar ningun identificador de la sesion agotada y pasa el objetivo original junto con el estado rolling actualmente relevante, sin anidar todos los HANDOFF ni copiar historiales
-
-#### Scenario: El objetivo original permanece estable
-
-- **WHEN** existen dos o mas continuaciones por HANDOFF para la misma delegacion
-
-- **THEN** cada worker nuevo recibe el objetivo delegado original sin sustituirlo por el resumen parcial o el `Remaining` del worker anterior
-
-#### Scenario: HANDOFF no completa la subtarea
-
-- **WHEN** el orquestador recibe un `## HANDOFF` sin un bloqueo genuino separado
-- **THEN** continua automaticamente con un worker nuevo, no reporta exito, no inicia revision ni solicita confirmacion al usuario
-
-#### Scenario: Continuacion normal sin HANDOFF
-
-- **WHEN** un worker devuelve una respuesta normal y el orquestador necesita un seguimiento intencional
-- **THEN** puede reanudar la sesion existente mediante su `task_id` cuando esa continuacion sea apropiada
+- **WHEN** `integration-boundary-audit` encuentra una incompatibilidad concreta
+- **THEN** informa la frontera, la evidencia, el impacto y la acción recomendada sin editar archivos
 
 ### Requirement: Separación de configuraciones local y global
 
@@ -200,50 +142,58 @@ de OpenCode de los workflows locales del proyecto y SHALL evitar instrucciones
 que mezclen ambas superficies. El `integrations/opencode/AGENTS.md` SHALL
 limitarse a reglas aplicables a los recursos dentro de su propio scope, ser
 agnóstico de ubicación y no asumir que es una política global, una instalación
-operativa o parte de un repositorio consumidor concreto.
+operativa o parte de un repositorio consumidor concreto. La documentación
+portable SHALL dejar de presentar agentes personalizados o protocolos de HANDOFF
+eliminados como recursos instalables.
 
 #### Scenario: Consulta de la guia de integracion
 
 - **WHEN** un usuario consulta el `README.md` de la integracion o el `AGENTS.md` raiz
 - **THEN** puede identificar el propósito, la ubicación operativa, la relación
   y los límites de `integrations/opencode/`, `skills/` y `./.agents/` sin
-  interpretar la superficie interna como un recurso público
+  interpretar la superficie interna como un recurso público ni encontrar agentes
+  eliminados en el inventario instalable
 
 #### Scenario: Aplicacion aislada de las reglas del toolkit
 
 - **WHEN** el `integrations/opencode/AGENTS.md` se aplica bajo cualquier ubicacion que contenga sus recursos de scope
 - **THEN** sus reglas se mantienen validas sin depender de una ruta de instalacion, un repositorio consumidor, una estructura de workflows o una politica local concreta
 
-#### Scenario: Instalacion portable sin alterar el proyecto
+#### Scenario: Instalación portable sin agentes personalizados
 
 - **WHEN** el usuario sincroniza manualmente la configuracion portable
-- **THEN** copia únicamente los recursos documentados de
-  `integrations/opencode/` hacia `~/.config/opencode/`, conserva separadas las
-  reglas y configuraciones del proyecto consumidor y no copia `./.agents/`
+- **THEN** copia únicamente los recursos documentados que permanezcan en
+  `integrations/opencode/`, conserva separadas las reglas y configuraciones del
+  proyecto consumidor y no copia `./.agents/`
 
-### Requirement: Indice breve de agentes portables
+### Requirement: Skill propia documentada como recurso portable
 
-La integración portable SHALL ofrecer en `integrations/opencode/AGENTS.md` un índice conciso de los agentes disponibles, incluyendo `analyzer`, `planner`, `implementer`, `reviewer` e `integration-checker`, su responsabilidad principal y su límite general de edición. La guía SHALL remitir los métodos, límites detallados y formatos de salida a los contratos individuales de `integrations/opencode/agents/` sin duplicarlos.
+La integración SHALL versionar las skills públicas dentro de `skills/`, mantener cada skill ejecutable en `skills/<name>/SKILL.md` y documentar su instalación mediante `npx skills add <repository> --skill <name> --global`. La documentación SHALL permitir que el usuario seleccione el agente mediante el comportamiento neutral del CLI, sin recomendar ni imponer `opencode` u otro agente concreto. SHALL documentar la actualización mediante `npx skills update <name> --global`, distinguir las skills públicas de las dependencias externas opcionales y excluir explícitamente `./.agents/` de esta superficie. La sincronización manual de `integrations/opencode/` SHALL quedar limitada a la configuración, commands y plugins que permanezcan, sin incluir agentes personalizados eliminados, y SHALL mantener alineados el README raíz y el README de la integración.
 
-#### Scenario: Consulta del conjunto portable
+#### Scenario: Copia del respaldo portable
 
-- **WHEN** un usuario consulta la guía común de la integración
-- **THEN** puede identificar los cinco agentes portables y distinguir cuáles operan solo en lectura y cuáles pueden editar dentro de un alcance acotado
+- **WHEN** el usuario instala el respaldo portable de OpenCode
+- **THEN** puede sincronizar manualmente la configuración, los commands y los plugins que permanezcan desde `integrations/opencode/` sin requerir que las skills públicas formen parte de esa copia manual
 
-#### Scenario: Selección de un agente
+#### Scenario: Catálogo externo separado
 
-- **WHEN** el usuario tiene una tarea de análisis, planificación, implementación, revisión o comprobación de integración
-- **THEN** la guía permite seleccionar el rol apropiado sin exigir la lectura de todos los contratos individuales ni conocer un workflow externo
+- **WHEN** el usuario consulta el catálogo de skills
+- **THEN** puede identificar las skills públicas versionadas en `skills/`, las dependencias externas opcionales y la superficie interna excluida, sin confundir el catálogo con una copia de `./.agents/`
 
-#### Scenario: Detalle de un contrato
+#### Scenario: Skill pública instalable de forma neutral
 
-- **WHEN** un usuario necesita conocer el método o el formato de salida de un agente
-- **THEN** la guía dirige al contrato individual correspondiente y no presenta una segunda versión extensa o contradictoria de ese contrato
+- **WHEN** un usuario quiere instalar una skill pública desde el repositorio
+- **THEN** encuentra un comando `npx skills add` con alcance global que no recomienda ni impone un agente concreto y no instala la skill en `./.agents/skills/`
 
-#### Scenario: Toolkit aplicado en otro repositorio
+#### Scenario: Actualización de una skill pública
 
-- **WHEN** la integración portable se aplica bajo otra ubicación o junto a workflows propios del repositorio consumidor
-- **THEN** el índice de agentes conserva sus nombres, responsabilidades y límites sin asumir rutas locales ni configuraciones del consumidor
+- **WHEN** una skill pública ya está instalada y el usuario quiere sincronizar una versión posterior
+- **THEN** puede ejecutar `npx skills update <name> --global` sin copiar manualmente la skill ni modificar el respaldo de `integrations/opencode/`
+
+#### Scenario: Eliminación del command anterior
+
+- **WHEN** el respaldo se sincroniza después del cambio
+- **THEN** la instalación documentada no incluye `commands/commit.md` y conserva separados los commands restantes, las skills públicas y los workflows locales
 
 ### Requirement: Propuesta de tag centrada en commits
 
@@ -624,48 +574,3 @@ automáticas.
   las rutas propuestas parezcan iguales
 - **THEN** la skill invalida la propuesta por cambio de `HEAD` y solicita una
   nueva aprobación
-
-### Requirement: Skill propia documentada como recurso portable
-
-La integración SHALL versionar las skills públicas dentro de `skills/`,
-mantener cada skill ejecutable en `skills/<name>/SKILL.md` y documentar su
-instalación mediante `npx skills add <repository> --skill <name> --global`.
-La documentación SHALL permitir que el usuario seleccione los agentes mediante
-el comportamiento neutral del CLI, sin recomendar ni imponer `opencode` u otro
-agente concreto. SHALL documentar la actualización mediante
-`npx skills update <name> --global`, distinguir las skills públicas de las
-dependencias externas opcionales y excluir explícitamente `./.agents/` de esta
-superficie. La sincronización manual de `integrations/opencode/` SHALL seguir
-limitada a su configuración, agents, commands y plugins, y SHALL mantener
-alineados el README raíz y el README de la integración.
-
-#### Scenario: Copia del respaldo portable
-- **WHEN** el usuario instala el respaldo portable de OpenCode
-- **THEN** puede sincronizar manualmente agents, commands, plugins y
-  configuración desde `integrations/opencode/` sin requerir que la skill
-  pública forme parte de esa copia manual
-
-#### Scenario: Catálogo externo separado
-- **WHEN** el usuario consulta el catálogo de skills
-- **THEN** puede identificar las skills públicas versionadas en `skills/`, las
-  dependencias externas opcionales y la superficie interna excluida, sin
-  confundir el catálogo con una copia de `./.agents/`
-
-#### Scenario: Skill pública instalable de forma neutral
-
-- **WHEN** un usuario quiere instalar una skill pública desde el repositorio
-- **THEN** encuentra un comando `npx skills add` con alcance global que no
-  recomienda ni impone un agente concreto y no instala la skill en
-  `./.agents/skills/`
-
-#### Scenario: Actualización de una skill pública
-
-- **WHEN** una skill pública ya está instalada y el usuario quiere sincronizar
-  una versión posterior
-- **THEN** puede ejecutar `npx skills update <name> --global` sin copiar
-  manualmente la skill ni modificar el respaldo de `integrations/opencode/`
-
-#### Scenario: Eliminación del command anterior
-- **WHEN** el respaldo se sincroniza después del cambio
-- **THEN** la instalación documentada no incluye `commands/commit.md` y conserva
-  separados los commands restantes, las skills públicas y los workflows locales
