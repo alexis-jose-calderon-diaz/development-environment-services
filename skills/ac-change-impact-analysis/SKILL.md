@@ -1,5 +1,5 @@
 ---
-name: change-impact-analysis
+name: ac-change-impact-analysis
 description: Analiza el impacto, alcance, superficie, complejidad, consumidores, riesgos e incertidumbres de un cambio antes de implementarlo. Activa esta skill cuando el usuario pida evaluar qué existe, qué archivos o módulos podrían verse afectados, quién consume una interfaz, qué riesgos tiene una modificación o si conviene dividirla, aunque no use la expresión "análisis de impacto" y aunque no exista un plan, informe previo, especificación formal u orquestador.
 compatibility: Requiere un agente que pueda leer el repositorio y sus archivos relevantes. Las instrucciones read-only son un contrato de comportamiento, no un aislamiento de permisos del runtime.
 ---

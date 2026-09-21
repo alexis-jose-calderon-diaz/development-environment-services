@@ -12,11 +12,11 @@ carpeta es únicamente el catálogo y no se instala como una skill.
 
 | Skill | Uso | Fuente y límites |
 | --- | --- | --- |
-| `grouped-commits` | Agrupar cambios Git por intención, mostrar una propuesta completa y crear commits tras aprobación explícita | `grouped-commits/SKILL.md`; no depende de otra skill y conserva sus propias reglas de aprobación y seguridad |
-| `change-impact-analysis` | Analizar impacto, superficie, consumidores, complejidad, riesgos e incertidumbres antes de implementar | `change-impact-analysis/SKILL.md`; read-only por contrato, sin aislamiento de permisos del runtime |
-| `change-planning` | Preparar planes técnicos verificables con unidades, dependencias, validaciones y puntos de decisión | `change-planning/SKILL.md`; no implementa ni requiere OpenSpec u orquestación previa |
-| `change-review` | Revisar diffs o implementaciones contra objetivos, alcance, restricciones y criterios | `change-review/SKILL.md`; read-only por contrato y basado en evidencia |
-| `integration-boundary-audit` | Auditar fronteras entre implementación, contratos, consumidores, persistencia, generados y tests | `integration-boundary-audit/SKILL.md`; read-only por contrato y no aplica correcciones |
+| `ac-grouped-commits` | Agrupar cambios Git por intención, mostrar una propuesta completa y crear commits tras aprobación explícita | `ac-grouped-commits/SKILL.md`; no depende de otra skill y conserva sus propias reglas de aprobación y seguridad |
+| `ac-change-impact-analysis` | Analizar impacto, superficie, consumidores, complejidad, riesgos e incertidumbres antes de implementar | `ac-change-impact-analysis/SKILL.md`; read-only por contrato, sin aislamiento de permisos del runtime |
+| `ac-change-planning` | Preparar planes técnicos verificables con unidades, dependencias, validaciones y puntos de decisión | `ac-change-planning/SKILL.md`; no implementa ni requiere OpenSpec u orquestación previa |
+| `ac-change-review` | Revisar diffs o implementaciones contra objetivos, alcance, restricciones y criterios | `ac-change-review/SKILL.md`; read-only por contrato y basado en evidencia |
+| `ac-integration-boundary-audit` | Auditar fronteras entre implementación, contratos, consumidores, persistencia, generados y tests | `ac-integration-boundary-audit/SKILL.md`; read-only por contrato y no aplica correcciones |
 
 La fuente pública de este repositorio es
 [`alexis-jose-calderon-diaz/development-environment-services`](https://github.com/alexis-jose-calderon-diaz/development-environment-services).
@@ -32,11 +32,11 @@ la fuente externa puede cambiar después de esa fecha.
 
 | Skill | Uso | Relación y límites |
 | --- | --- | --- |
-| [`git-commit`](https://github.com/github/awesome-copilot/tree/main/skills/git-commit) | Base general para Conventional Commits y análisis de diffs | Es opcional; `grouped-commits` no depende de ella y conserva sus propias reglas de aprobación y seguridad. |
+| [`git-commit`](https://github.com/github/awesome-copilot/tree/main/skills/git-commit) | Base general para Conventional Commits y análisis de diffs | Es opcional; `ac-grouped-commits` no depende de ella y conserva sus propias reglas de aprobación y seguridad. |
 | [`excalidraw-diagram-generator`](https://github.com/github/awesome-copilot/tree/main/skills/excalidraw-diagram-generator) | Crear diagramas de flujo, arquitectura, relaciones, secuencias y otros archivos `.excalidraw` | Complementa la exploración visual y la documentación arquitectónica. Solo es útil cuando se trabaja con el formato y el ecosistema Excalidraw. |
 | [`documentation-writer`](https://github.com/github/awesome-copilot/tree/main/skills/documentation-writer) | Redactar documentación técnica siguiendo Diátaxis | Es una skill opinada: exige identificar tipo de documento, audiencia, objetivo y alcance, y aprobar una estructura antes de redactar. No sustituye las convenciones documentales del repositorio. |
-| [`docs-sync-audit`](https://github.com/github/awesome-copilot/tree/main/skills/docs-sync-audit) | Auditar divergencias entre código, configuración, comandos y documentación | Complementa a `change-review` con una auditoría documental read-only. No es una revisión general de código y debe mantenerse dentro del alcance documental necesario. |
-| [`test-gap-audit`](https://github.com/github/awesome-copilot/tree/main/skills/test-gap-audit) | Detectar cobertura de pruebas ausente, débil o desactualizada | Complementa a `change-review` e `integration-boundary-audit` con una auditoría read-only de tests. Su valor principal está en repositorios consumidores que sí tienen código y suite de pruebas. |
+| [`docs-sync-audit`](https://github.com/github/awesome-copilot/tree/main/skills/docs-sync-audit) | Auditar divergencias entre código, configuración, comandos y documentación | Complementa a `ac-change-review` con una auditoría documental read-only. No es una revisión general de código y debe mantenerse dentro del alcance documental necesario. |
+| [`test-gap-audit`](https://github.com/github/awesome-copilot/tree/main/skills/test-gap-audit) | Detectar cobertura de pruebas ausente, débil o desactualizada | Complementa a `ac-change-review` y `ac-integration-boundary-audit` con una auditoría read-only de tests. Su valor principal está en repositorios consumidores que sí tienen código y suite de pruebas. |
 | [`security-review`](https://github.com/github/awesome-copilot/tree/main/skills/security-review) | Revisar vulnerabilidades, secretos, dependencias y flujos de datos | Es una revisión amplia y bajo demanda. Proporciona siempre un alcance concreto cuando sea posible, revisa sus hallazgos y no apliques automáticamente sus propuestas de parche. |
 
 ## Instalación y actualización
@@ -49,18 +49,18 @@ Para instalar la skill versionada:
 
 ```bash
 npx skills add https://github.com/alexis-jose-calderon-diaz/development-environment-services \
-  --skill grouped-commits \
-  --skill change-impact-analysis \
-  --skill change-planning \
-  --skill change-review \
-  --skill integration-boundary-audit \
+  --skill ac-grouped-commits \
+  --skill ac-change-impact-analysis \
+  --skill ac-change-planning \
+  --skill ac-change-review \
+  --skill ac-integration-boundary-audit \
   --global
 ```
 
 Para actualizarla:
 
 ```bash
-npx skills update grouped-commits --global
+npx skills update ac-grouped-commits --global
 ```
 
 Para instalar skills externas seleccionadas explícitamente:
@@ -83,7 +83,7 @@ parte de este catálogo.
 
 - Las skills externas amplían capacidades, pero no autorizan a cambiar el
   alcance, los permisos ni las reglas del toolkit.
-- `grouped-commits` es la skill pública para organizar commits y no requiere
+- `ac-grouped-commits` es la skill pública para organizar commits y no requiere
   instalar `git-commit`.
 - Revisa el contenido de una skill antes de instalarla y compara los cambios
   antes de actualizar una instalación global existente.

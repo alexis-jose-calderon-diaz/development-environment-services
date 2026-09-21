@@ -1,5 +1,5 @@
 ---
-name: change-review
+name: ac-change-review
 description: Revisa diffs o implementaciones contra su objetivo, alcance, restricciones y criterios de aceptación. Activa esta skill cuando el usuario pida revisar un cambio, PR, diff o implementación, con o sin OpenSpec u otro workflow formal; produce hallazgos accionables basados en evidencia y separa confirmaciones, incertidumbres, riesgos y brechas de pruebas sin modificar archivos.
 ---
 

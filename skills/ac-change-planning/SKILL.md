@@ -1,5 +1,5 @@
 ---
-name: change-planning
+name: ac-change-planning
 description: Crea planes técnicos verificables para cambios de software. Activa esta skill cuando el usuario pida planificar, descomponer, ordenar o preparar la ejecución de una tarea, aunque no proporcione un Analysis Report, un identificador OpenSpec ni una delegación previa; inspecciona el contexto mínimo necesario y no implementes el cambio.
 ---
 

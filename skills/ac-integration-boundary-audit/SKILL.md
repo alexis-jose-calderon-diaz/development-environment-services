@@ -1,5 +1,5 @@
 ---
-name: integration-boundary-audit
+name: ac-integration-boundary-audit
 description: Audita de forma read-only si las piezas de un cambio distribuido encajan entre sí. Activa esta skill cuando el usuario pida comprobar fronteras entre implementación, contratos, clientes o consumidores, modelos, persistencia, migraciones, salidas generadas y tests, o cuando necesite identificar incompatibilidades, bloqueos o decisiones de diseño antes de corregirlas. No la uses para implementar cambios, revisar estilo interno ni organizar commits.
 ---
 

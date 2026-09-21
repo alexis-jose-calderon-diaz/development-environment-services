@@ -51,17 +51,17 @@ El orquestador SHALL entregar a cada sub-agente un prompt autocontenido y propor
 
 ### Requirement: Skills portables de análisis y planificación
 
-La superficie pública SHALL proporcionar skills independientes y autosuficientes para analizar el impacto de un cambio y preparar un plan de ejecución. `change-impact-analysis` SHALL operar en modo read-only, identificar la superficie directamente relevante, riesgos, consumidores y complejidad, y distinguir hechos confirmados de incertidumbres. `change-planning` SHALL poder iniciar su propia inspección proporcional cuando el usuario pida un plan y SHALL producir unidades, dependencias, modos de ejecución y validaciones sin exigir un informe interno de otro agente.
+La superficie pública SHALL proporcionar skills independientes y autosuficientes para analizar el impacto de un cambio y preparar un plan de ejecución. `ac-change-impact-analysis` SHALL operar en modo read-only, identificar la superficie directamente relevante, riesgos, consumidores y complejidad, y distinguir hechos confirmados de incertidumbres. `ac-change-planning` SHALL poder iniciar su propia inspección proporcional cuando el usuario pida un plan y SHALL producir unidades, dependencias, modos de ejecución y validaciones sin exigir un informe interno de otro agente.
 
 #### Scenario: Análisis de impacto solicitado por el usuario
 
 - **WHEN** el usuario pide evaluar el impacto, alcance o riesgos de un cambio antes de implementarlo
-- **THEN** `change-impact-analysis` devuelve un análisis fundamentado en el repositorio actual sin modificar archivos
+- **THEN** `ac-change-impact-analysis` devuelve un análisis fundamentado en el repositorio actual sin modificar archivos
 
 #### Scenario: Plan solicitado sin contexto de orquestador
 
 - **WHEN** el usuario pide un plan técnico para una tarea y no proporciona un `Analysis Report` previo
-- **THEN** `change-planning` inspecciona el contexto mínimo necesario y devuelve un plan verificable sin bloquear por la ausencia de una delegación previa
+- **THEN** `ac-change-planning` inspecciona el contexto mínimo necesario y devuelve un plan verificable sin bloquear por la ausencia de una delegación previa
 
 #### Scenario: Tarea pequeña
 
@@ -70,22 +70,22 @@ La superficie pública SHALL proporcionar skills independientes y autosuficiente
 
 ### Requirement: Skills portables de revisión e integración
 
-La superficie pública SHALL proporcionar una skill para revisar cambios contra un objetivo y sus criterios, y una skill para auditar fronteras de integración. `change-review` SHALL ser read-only por contrato, priorizar incumplimientos con evidencia y distinguir hallazgos confirmados, incertidumbres, riesgos residuales y brechas de pruebas. `integration-boundary-audit` SHALL limitarse a comprobar coherencia entre módulos, contratos, consumidores, persistencia, salidas generadas y tests; no SHALL aplicar correcciones automáticamente.
+La superficie pública SHALL proporcionar una skill para revisar cambios contra un objetivo y sus criterios, y una skill para auditar fronteras de integración. `ac-change-review` SHALL ser read-only por contrato, priorizar incumplimientos con evidencia y distinguir hallazgos confirmados, incertidumbres, riesgos residuales y brechas de pruebas. `ac-integration-boundary-audit` SHALL limitarse a comprobar coherencia entre módulos, contratos, consumidores, persistencia, salidas generadas y tests; no SHALL aplicar correcciones automáticamente.
 
 #### Scenario: Revisión contra criterios
 
 - **WHEN** el usuario pide revisar un diff o una implementación con un objetivo y criterios disponibles
-- **THEN** `change-review` informa hallazgos accionables con ubicación, evidencia, impacto y recomendación, sin editar archivos
+- **THEN** `ac-change-review` informa hallazgos accionables con ubicación, evidencia, impacto y recomendación, sin editar archivos
 
 #### Scenario: Revisión sin workflow formal
 
 - **WHEN** el usuario pide una revisión genérica sin especificación OpenSpec
-- **THEN** `change-review` usa el objetivo, el alcance y la evidencia disponible sin exigir un identificador o workflow externo
+- **THEN** `ac-change-review` usa el objetivo, el alcance y la evidencia disponible sin exigir un identificador o workflow externo
 
 #### Scenario: Auditoría de fronteras
 
 - **WHEN** el usuario pide verificar que varias piezas de un cambio distribuido encajan entre sí
-- **THEN** `integration-boundary-audit` comprueba únicamente las fronteras relevantes y marca como no verificadas las que carecen de evidencia suficiente
+- **THEN** `ac-integration-boundary-audit` comprueba únicamente las fronteras relevantes y marca como no verificadas las que carecen de evidencia suficiente
 
 #### Scenario: Problema que requiere una decisión de diseño
 
@@ -98,7 +98,7 @@ Las skills migradas SHALL documentar que sus instrucciones read-only no constitu
 
 #### Scenario: Carga de una skill read-only en un agente con edición
 
-- **WHEN** el agente actual tiene permisos de edición y carga `change-review` o `integration-boundary-audit`
+- **WHEN** el agente actual tiene permisos de edición y carga `ac-change-review` o `ac-integration-boundary-audit`
 - **THEN** la skill conserva la instrucción de no editar, pero la documentación no presenta esa instrucción como una garantía de seguridad del runtime
 
 #### Scenario: Uso de una skill en Plan mode
@@ -119,12 +119,12 @@ Las skills de análisis y revisión SHALL conservar la disciplina de contexto m�
 
 #### Scenario: Flujo de revisión genérica
 
-- **WHEN** `change-review` recibe un objetivo, un alcance, criterios de aceptación y un diff sin una especificación externa
+- **WHEN** `ac-change-review` recibe un objetivo, un alcance, criterios de aceptación y un diff sin una especificación externa
 - **THEN** identifica hallazgos concretos contra ese contexto y devuelve su informe sin bloquear por la ausencia de un workflow formal
 
 #### Scenario: Flujo de integración sin corrección automática
 
-- **WHEN** `integration-boundary-audit` encuentra una incompatibilidad concreta
+- **WHEN** `ac-integration-boundary-audit` encuentra una incompatibilidad concreta
 - **THEN** informa la frontera, la evidencia, el impacto y la acción recomendada sin editar archivos
 
 ### Requirement: Separación de configuraciones local y global
@@ -168,7 +168,7 @@ eliminados como recursos instalables.
 
 ### Requirement: Skill propia documentada como recurso portable
 
-La integración SHALL versionar las skills públicas dentro de `skills/`, mantener cada skill ejecutable en `skills/<name>/SKILL.md` y documentar su instalación mediante `npx skills add <repository> --skill <name> --global`. La documentación SHALL permitir que el usuario seleccione el agente mediante el comportamiento neutral del CLI, sin recomendar ni imponer `opencode` u otro agente concreto. SHALL documentar la actualización mediante `npx skills update <name> --global`, distinguir las skills públicas de las dependencias externas opcionales y excluir explícitamente `./.agents/` de esta superficie. La sincronización manual de `integrations/opencode/` SHALL quedar limitada a la configuración, commands y plugins que permanezcan, sin incluir agentes personalizados eliminados, y SHALL mantener alineados el README raíz y el README de la integración.
+La integración SHALL versionar las skills públicas dentro de `skills/`, mantener cada skill ejecutable en `skills/<name>/SKILL.md` y documentar su instalación mediante `npx skills add <repository> --skill <name> --global`. Los cinco nombres públicos SHALL usar el prefijo `ac-`: `ac-change-impact-analysis`, `ac-change-planning`, `ac-change-review`, `ac-grouped-commits` y `ac-integration-boundary-audit`. La documentación SHALL permitir que el usuario seleccione el agente mediante el comportamiento neutral del CLI, sin recomendar ni imponer `opencode` u otro agente concreto. SHALL documentar la actualización mediante `npx skills update <name> --global`, distinguir las skills públicas de las dependencias externas opcionales y excluir explícitamente `./.agents/` de esta superficie. La sincronización manual de `integrations/opencode/` SHALL quedar limitada a la configuración, commands y plugins que permanezcan, sin incluir agentes personalizados eliminados, y SHALL mantener alineados el README raíz y el README de la integración.
 
 #### Scenario: Copia del respaldo portable
 
@@ -183,11 +183,11 @@ La integración SHALL versionar las skills públicas dentro de `skills/`, manten
 #### Scenario: Skill pública instalable de forma neutral
 
 - **WHEN** un usuario quiere instalar una skill pública desde el repositorio
-- **THEN** encuentra un comando `npx skills add` con alcance global que no recomienda ni impone un agente concreto y no instala la skill en `./.agents/skills/`
+- **THEN** encuentra un comando `npx skills add` con alcance global que usa el identificador público con prefijo `ac-`, no recomienda ni impone un agente concreto y no instala la skill en `./.agents/skills/`
 
 #### Scenario: Actualización de una skill pública
 
-- **WHEN** una skill pública ya está instalada y el usuario quiere sincronizar una versión posterior
+- **WHEN** una skill pública con identificador `ac-*` ya está instalada y el usuario quiere sincronizar una versión posterior
 - **THEN** puede ejecutar `npx skills update <name> --global` sin copiar manualmente la skill ni modificar el respaldo de `integrations/opencode/`
 
 #### Scenario: Eliminación del command anterior

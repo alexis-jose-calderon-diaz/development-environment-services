@@ -1,5 +1,5 @@
 ---
-name: grouped-commits
+name: ac-grouped-commits
 description: Use this skill whenever the user asks to review, group, split, organize, or create logical Git commits from existing changes, including staged/index or working-tree changes. It prepares a complete proposal and creates commits only after explicit approval; use it even when the user does not mention the skill by name or asks only to clean up commit organization.
 ---
 
