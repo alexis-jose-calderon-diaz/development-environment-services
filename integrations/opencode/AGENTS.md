@@ -29,9 +29,10 @@ runtime. Cuando una tarea requiera aislamiento estricto, usa un agente o modo
 con permisos adecuados y no presentes la skill como una garantía de seguridad.
 
 No se proporcionan agentes personalizados ni un protocolo portable de
-continuación de sesiones en este scope. Los comandos globales restantes deben
-operar sobre la petición actual y no asumir roles, ownership o workflows
-externos.
+continuación de sesiones en este scope. Las skills públicas se distribuyen y
+actualizan por separado mediante el CLI `skills`; los workflows y commands del
+proyecto consumidor permanecen fuera de este scope y no deben asumir roles,
+ownership ni continuaciones externas.
 
 ## Coordinación y salida
 

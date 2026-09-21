@@ -17,6 +17,8 @@ carpeta es únicamente el catálogo y no se instala como una skill.
 | `ac-change-planning` | Preparar planes técnicos verificables con unidades, dependencias, validaciones y puntos de decisión | `ac-change-planning/SKILL.md`; no implementa ni requiere OpenSpec u orquestación previa |
 | `ac-change-review` | Revisar diffs o implementaciones contra objetivos, alcance, restricciones y criterios | `ac-change-review/SKILL.md`; read-only por contrato y basado en evidencia |
 | `ac-integration-boundary-audit` | Auditar fronteras entre implementación, contratos, consumidores, persistencia, generados y tests | `ac-integration-boundary-audit/SKILL.md`; read-only por contrato y no aplica correcciones |
+| `ac-release-tag-proposal` | Analizar commits y proponer una versión SemVer y un tag anotado sin crearlo ni publicarlo | `ac-release-tag-proposal/SKILL.md`; read-only por contrato y sin modificar refs |
+| `ac-pull-request` | Revisar commits y preparar o crear una Pull Request después de confirmación explícita | `ac-pull-request/SKILL.md`; requiere GitHub CLI para publicar y no crea commits |
 
 La fuente pública de este repositorio es
 [`alexis-jose-calderon-diaz/development-environment-services`](https://github.com/alexis-jose-calderon-diaz/development-environment-services).
@@ -54,13 +56,16 @@ npx skills add https://github.com/alexis-jose-calderon-diaz/development-environm
   --skill ac-change-planning \
   --skill ac-change-review \
   --skill ac-integration-boundary-audit \
+  --skill ac-release-tag-proposal \
+  --skill ac-pull-request \
   --global
 ```
 
 Para actualizarla:
 
 ```bash
-npx skills update ac-grouped-commits --global
+npx skills update ac-release-tag-proposal --global
+npx skills update ac-pull-request --global
 ```
 
 Para instalar skills externas seleccionadas explícitamente:

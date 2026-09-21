@@ -1,6 +1,6 @@
 # Integración portable de OpenCode
 
-`integrations/opencode/` es el respaldo versionado y portable de la configuración global de OpenCode. La instalación operativa está en `~/.config/opencode/`; este respaldo sirve para revisar cambios, conservar historial y recuperar una configuración conocida. No es una segunda ubicación operativa ni OpenCode lo carga directamente. Las skills públicas versionadas viven separadamente en `/skills/`.
+`integrations/opencode/` es el respaldo versionado y portable de la configuración global de OpenCode. La instalación operativa está en `~/.config/opencode/`; este respaldo sirve para revisar cambios, conservar historial y recuperar una configuración conocida. No es una segunda ubicación operativa ni OpenCode lo carga directamente. Las skills públicas versionadas viven separadamente en `/skills/` y se instalan mediante el CLI `skills`.
 
 El toolkit global se mantiene separado del `AGENTS.md` raíz, `.opencode/` y los workflows o la configuración del proyecto consumidor. Copiar estos recursos no reemplaza ni modifica por sí solo esas superficies locales.
 
@@ -13,10 +13,10 @@ siguiente:
 | --- | --- |
 | `integrations/opencode/AGENTS.md` | `~/.config/opencode/AGENTS.md` |
 | `integrations/opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
-| `integrations/opencode/commands/pr.md` | `~/.config/opencode/commands/pr.md` |
-| `integrations/opencode/commands/tag.md` | `~/.config/opencode/commands/tag.md` |
 
-Los comandos de `integrations/opencode/commands/` son comandos globales. Los comandos y workflows de `.opencode/` pertenecen al proyecto consumidor y permanecen fuera de esta instalación.
+No hay commands globales versionados en este respaldo. Los commands y
+workflows de `.opencode/` pertenecen al proyecto consumidor y permanecen fuera
+de esta instalación.
 
 ## Skills públicas y dependencias externas
 
@@ -31,14 +31,13 @@ interno y queda fuera de esta integración.
 
 ## Instalación manual
 
-Desde la raíz del repositorio, crea las carpetas de destino si faltan y copia únicamente los recursos enumerados:
+Desde la raíz del repositorio, crea la carpeta de destino si falta y copia
+únicamente los recursos enumerados:
 
 ```bash
-mkdir -p ~/.config/opencode/commands
+mkdir -p ~/.config/opencode
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
-cp integrations/opencode/commands/pr.md ~/.config/opencode/commands/pr.md
-cp integrations/opencode/commands/tag.md ~/.config/opencode/commands/tag.md
 ```
 
 Estas operaciones son manuales, no un instalador automático. Revisa el contenido y las diferencias antes de copiar. La configuración global instalada coexiste con el `AGENTS.md` raíz y la configuración local del proyecto consumidor; conserva sus reglas locales y no las reemplaces.
@@ -53,8 +52,8 @@ La sincronización es manual y bidireccional entre el respaldo versionado y la i
 4. Tras cambiar intencionalmente la instalación operativa, incorpora el cambio al respaldo solo después de revisar el diff.
 5. Tras actualizar el respaldo, vuelve a comparar antes de copiarlo a `~/.config/opencode/`.
 
-Las skills públicas no se sincronizan con esta comparación. Usa
-`npx skills update <name> --global` según el catálogo público.
+Las skills públicas no se sincronizan con esta comparación. Instálalas y
+actualízalas con `npx skills` según el catálogo público.
 
 No se proporcionan scripts, enlaces simbólicos ni copias automáticas. Reinicia OpenCode después de cambiar archivos globales para que cargue la configuración actualizada.
 

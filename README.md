@@ -70,10 +70,9 @@ La instalación global de OpenCode no es necesaria para operar los servicios. Si
 ```bash
 git clone https://github.com/alexis-jose-calderon-diaz/development-environment-services.git
 cd development-environment-services
-mkdir -p ~/.config/opencode/commands
+mkdir -p ~/.config/opencode
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
-cp integrations/opencode/commands/*.md ~/.config/opencode/commands/
 ```
 
 Revisa y combina `AGENTS.md` con las reglas globales existentes antes de
