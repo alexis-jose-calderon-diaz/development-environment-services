@@ -1,6 +1,6 @@
 # Integración portable de OpenCode
 
-`integrations/opencode/` es el respaldo versionado y portable de la configuración global de OpenCode. La instalación operativa está en `~/.config/opencode/`; este respaldo sirve para revisar cambios, conservar historial y recuperar una configuración conocida. No es una segunda ubicación operativa ni OpenCode lo carga directamente.
+`integrations/opencode/` es el respaldo versionado y portable de la configuración global de OpenCode. La instalación operativa está en `~/.config/opencode/`; este respaldo sirve para revisar cambios, conservar historial y recuperar una configuración conocida. No es una segunda ubicación operativa ni OpenCode lo carga directamente. Las skills públicas versionadas viven separadamente en `/skills/`.
 
 El toolkit global se mantiene separado del `AGENTS.md` raíz, `.opencode/` y los workflows o la configuración del proyecto consumidor. Copiar estos recursos no reemplaza ni modifica por sí solo esas superficies locales.
 
@@ -20,32 +20,27 @@ siguiente:
 | `integrations/opencode/agents/integration-checker.md` | `~/.config/opencode/agents/integration-checker.md` |
 | `integrations/opencode/commands/pr.md` | `~/.config/opencode/commands/pr.md` |
 | `integrations/opencode/commands/tag.md` | `~/.config/opencode/commands/tag.md` |
-| `integrations/opencode/skills/grouped-commits/SKILL.md` | `~/.config/opencode/skills/grouped-commits/SKILL.md` |
 | `integrations/opencode/plugins/context-handoff.ts` | `~/.config/opencode/plugins/context-handoff.ts` |
 
 Los comandos de `integrations/opencode/commands/` son comandos globales. Los comandos y workflows de `.opencode/` pertenecen al proyecto consumidor y permanecen fuera de esta instalación.
 
-## Skills propias y dependencias externas
+## Skills públicas y dependencias externas
 
-`grouped-commits` es una skill propia versionada y forma parte de la copia
-manual de este respaldo. OpenCode la carga desde
-`~/.config/opencode/skills/grouped-commits/SKILL.md`.
+`grouped-commits` es una skill pública versionada en `/skills/` y no forma parte
+de la copia manual de este respaldo. Instálala y actualízala con el CLI `skills`
+siguiendo el [catálogo público](../../skills/README.md), que también documenta
+las dependencias externas opcionales.
 
-La carpeta `integrations/opencode/skills/` también contiene un catálogo
-documental de skills externas opcionales. Esas dependencias se instalan por
-separado y no son necesarias para ejecutar `grouped-commits`.
-
-Consulta el [catálogo de skills globales](skills/README.md) para conocer las
-opciones externas, sus límites y los comandos selectivos de
-`npx skills add --global --agent opencode`. No copies el README ni ningún
-`SKILL.md` externo desde este respaldo como si fuera una skill propia.
+No copies un README ni un `SKILL.md` desde `integrations/opencode/` como si
+fuera una skill pública. La superficie `./.agents/` pertenece al workflow
+interno y queda fuera de esta integración.
 
 ## Instalación manual
 
 Desde la raíz del repositorio, crea las carpetas de destino si faltan y copia únicamente los recursos enumerados:
 
 ```bash
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins ~/.config/opencode/skills/grouped-commits
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
 cp integrations/opencode/agents/analyzer.md ~/.config/opencode/agents/analyzer.md
@@ -55,7 +50,6 @@ cp integrations/opencode/agents/reviewer.md ~/.config/opencode/agents/reviewer.m
 cp integrations/opencode/agents/integration-checker.md ~/.config/opencode/agents/integration-checker.md
 cp integrations/opencode/commands/pr.md ~/.config/opencode/commands/pr.md
 cp integrations/opencode/commands/tag.md ~/.config/opencode/commands/tag.md
-cp integrations/opencode/skills/grouped-commits/SKILL.md ~/.config/opencode/skills/grouped-commits/SKILL.md
 cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/context-handoff.ts
 ```
 
@@ -70,6 +64,9 @@ La sincronización es manual y bidireccional entre el respaldo versionado y la i
 3. Preserva las reglas y recursos locales deliberados; no sobrescribas sin revisar.
 4. Tras cambiar intencionalmente la instalación operativa, incorpora el cambio al respaldo solo después de revisar el diff.
 5. Tras actualizar el respaldo, vuelve a comparar antes de copiarlo a `~/.config/opencode/`.
+
+Las skills públicas no se sincronizan con esta comparación. Usa
+`npx skills update <name> --global` según el catálogo público.
 
 No se proporcionan scripts, enlaces simbólicos ni copias automáticas. Reinicia OpenCode después de cambiar archivos globales para que cargue la configuración actualizada.
 

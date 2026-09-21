@@ -1,24 +1,30 @@
-# Skills globales para OpenCode
+# Skills públicas
 
-Esta carpeta contiene una skill propia versionada y un catálogo de skills
-externas opcionales. La skill propia se instala manualmente como parte del
-respaldo portable; las externas se instalan por separado y se cargan bajo
-demanda.
+Esta carpeta es la superficie pública y versionada de skills reutilizables. No
+es una copia de las skills internas del workflow del repositorio: `./.agents/`
+queda explícitamente fuera de este catálogo, del movimiento y de las
+instrucciones de instalación.
 
-## Skill propia
+Cada skill ejecutable se conserva en `skills/<name>/SKILL.md`; el README de esta
+carpeta es únicamente el catálogo y no se instala como una skill.
 
-| Skill | Uso | Instalación y límites |
+## Skills versionadas
+
+| Skill | Uso | Fuente y límites |
 | --- | --- | --- |
-| `grouped-commits` | Agrupar cambios Git por intención, mostrar una propuesta completa y crear commits tras aprobación explícita | Se copia desde este respaldo a `~/.config/opencode/skills/grouped-commits/SKILL.md`; no depende de otra skill |
+| `grouped-commits` | Agrupar cambios Git por intención, mostrar una propuesta completa y crear commits tras aprobación explícita | `grouped-commits/SKILL.md`; no depende de otra skill y conserva sus propias reglas de aprobación y seguridad |
 
-La fuente curada es [`github/awesome-copilot`](https://github.com/github/awesome-copilot).
-La referencia fue revisada el 2026-09-11 sobre la rama `main`; el contenido de
-la fuente externa puede cambiar después de esa fecha.
+La fuente pública de este repositorio es
+[`alexis-jose-calderon-diaz/development-environment-services`](https://github.com/alexis-jose-calderon-diaz/development-environment-services).
 
 ## Skills externas opcionales
 
 Instala estas skills solo cuando el tipo de trabajo las justifique. No forman
-parte del baseline global.
+parte del baseline de este repositorio.
+
+La fuente curada es [`github/awesome-copilot`](https://github.com/github/awesome-copilot).
+La referencia fue revisada el 2026-09-11 sobre la rama `main`; el contenido de
+la fuente externa puede cambiar después de esa fecha.
 
 | Skill | Uso | Relación y límites |
 | --- | --- | --- |
@@ -29,13 +35,27 @@ parte del baseline global.
 | [`test-gap-audit`](https://github.com/github/awesome-copilot/tree/main/skills/test-gap-audit) | Detectar cobertura de pruebas ausente, débil o desactualizada | Complementa a `reviewer` e `integration-checker` con una auditoría read-only de tests. Su valor principal está en repositorios consumidores que sí tienen código y suite de pruebas. |
 | [`security-review`](https://github.com/github/awesome-copilot/tree/main/skills/security-review) | Revisar vulnerabilidades, secretos, dependencias y flujos de datos | Es una revisión amplia y bajo demanda. Proporciona siempre un alcance concreto cuando sea posible, revisa sus hallazgos y no apliques automáticamente sus propuestas de parche. |
 
-## Instalación global
+## Instalación y actualización
 
-`npx skills add` instala en el proyecto actual por defecto. Para que una skill
-esté disponible en todos los repositorios mediante OpenCode, usa `--global` y
-limita el destino con `--agent opencode`:
+El alcance global evita instalar skills en `./.agents/skills/`. El CLI mantiene
+la selección de agentes neutral: el usuario decide los agentes disponibles o
+usa la detección que corresponda a su entorno.
 
-Para instalar una o varias skills externas, selecciona cada nombre explícitamente:
+Para instalar la skill versionada:
+
+```bash
+npx skills add https://github.com/alexis-jose-calderon-diaz/development-environment-services \
+  --skill grouped-commits \
+  --global
+```
+
+Para actualizarla:
+
+```bash
+npx skills update grouped-commits --global
+```
+
+Para instalar skills externas seleccionadas explícitamente:
 
 ```bash
 npx skills add https://github.com/github/awesome-copilot \
@@ -44,19 +64,18 @@ npx skills add https://github.com/github/awesome-copilot \
   --skill docs-sync-audit \
   --skill test-gap-audit \
   --skill security-review \
-  --global \
-  --agent opencode
+  --global
 ```
 
 No uses `--all` como instalación base. La selección automática puede incluir
 skills específicas de frameworks, proveedores cloud o dominios que no forman
-parte de este toolkit.
+parte de este catálogo.
 
 ## Precedencia y mantenimiento
 
 - Las skills externas amplían capacidades, pero no autorizan a cambiar el
   alcance, los permisos ni las reglas del toolkit.
-- `grouped-commits` es la skill propia para organizar commits y no requiere
+- `grouped-commits` es la skill pública para organizar commits y no requiere
   instalar `git-commit`.
 - Revisa el contenido de una skill antes de instalarla y compara los cambios
   antes de actualizar una instalación global existente.
@@ -65,8 +84,8 @@ parte de este toolkit.
 - Estas instrucciones no instalan, actualizan ni eliminan ninguna skill por sí
   mismas.
 
-La instalación manual del respaldo versionado y la instalación de estas
-dependencias externas son operaciones separadas. Consulta la [guía de
-integración](../README.md) para sincronizar reglas, agents, commands,
-configuración, plugins y la skill propia sin copiar este catálogo como si fuera
-una skill ejecutable.
+La instalación de skills públicas y la sincronización manual de la
+configuración portable son operaciones separadas. Consulta la [guía de
+integración](../integrations/opencode/README.md) para sincronizar reglas,
+agents, commands, configuración y plugins. No copies este README ni uses
+`./.agents/` como fuente de skills públicas.

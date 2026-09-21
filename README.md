@@ -11,7 +11,8 @@ El ambiente proporciona servicios Docker persistentes e independientes de cualqu
 ## Componentes
 
 - `services/`: definición Docker Compose, variables de ejemplo y servicios compartidos del ambiente.
-- `integrations/opencode/`: respaldo versionado de la configuración global de OpenCode. Es una integración opcional; consulta su [guía de integración](integrations/opencode/README.md).
+- `skills/`: skills públicas versionadas y reutilizables. No incluye la superficie interna `./.agents/`.
+- `integrations/opencode/`: respaldo versionado de la configuración portable global. Es una integración opcional; consulta su [guía de integración](integrations/opencode/README.md).
 - `openspec/`: especificaciones y cambios del workflow OpenSpec de este repositorio.
 - `.opencode/`: comandos y skills internos para trabajar con OpenSpec en este repositorio. No es el origen de la instalación global de OpenCode.
 
@@ -64,26 +65,24 @@ PostgreSQL usa `POSTGRES_HOST_AUTH_METHOD=trust` para el desarrollo local. Cualq
 
 ## Integración opcional de OpenCode
 
-La instalación global de OpenCode no es necesaria para operar los servicios. Si quieres usarla, clona el repositorio y copia manualmente el respaldo versionado de `integrations/opencode/` hacia la configuración operativa:
+La instalación global de OpenCode no es necesaria para operar los servicios. Si quieres usar la configuración portable, clona el repositorio y copia manualmente el respaldo versionado de `integrations/opencode/` hacia la configuración operativa:
 
 ```bash
 git clone https://github.com/alexis-jose-calderon-diaz/development-environment-services.git
 cd development-environment-services
-mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins ~/.config/opencode/skills/grouped-commits
+mkdir -p ~/.config/opencode/agents ~/.config/opencode/commands ~/.config/opencode/plugins
 cp integrations/opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 cp integrations/opencode/opencode.jsonc ~/.config/opencode/opencode.jsonc
 cp integrations/opencode/agents/*.md ~/.config/opencode/agents/
 cp integrations/opencode/commands/*.md ~/.config/opencode/commands/
-cp integrations/opencode/skills/grouped-commits/SKILL.md ~/.config/opencode/skills/grouped-commits/SKILL.md
 cp integrations/opencode/plugins/context-handoff.ts ~/.config/opencode/plugins/
 ```
 
 Revisa y combina `AGENTS.md` con las reglas globales existentes antes de
-reemplazarlo. La skill propia `grouped-commits` sí forma parte de esta copia;
-las skills externas no. Para conocer las opciones externas e instalarlas
-globalmente solo para OpenCode, consulta el [catálogo de
-skills](integrations/opencode/skills/README.md). Para comparar y mantener
-ambas ubicaciones, consulta la
+reemplazarlo. Las skills públicas se instalan y actualizan por separado con
+`npx skills`, no mediante esta copia manual. Consulta el [catálogo público de
+skills](skills/README.md) para instalar `grouped-commits` o skills externas de
+forma global y neutral. Para comparar y mantener ambas ubicaciones, consulta la
 [guía de integración](integrations/opencode/README.md).
 
 ## Operación y validación
