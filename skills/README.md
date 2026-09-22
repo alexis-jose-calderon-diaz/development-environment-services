@@ -12,7 +12,7 @@ carpeta es únicamente el catálogo y no se instala como una skill.
 
 | Skill | Uso | Fuente y límites |
 | --- | --- | --- |
-| `ac-grouped-commits` | Agrupar cambios Git por intención, mostrar una propuesta completa y crear commits tras aprobación explícita | `ac-grouped-commits/SKILL.md`; no depende de otra skill y conserva sus propias reglas de aprobación y seguridad |
+| `ac-grouped-commits` | Agrupar cambios Git por intención y mostrar una propuesta completa sin modificar el repositorio | `ac-grouped-commits/SKILL.md`; es read-only, no depende de otra skill y no crea commits |
 | `ac-change-impact-analysis` | Analizar impacto, superficie, consumidores, complejidad, riesgos e incertidumbres antes de implementar | `ac-change-impact-analysis/SKILL.md`; read-only por contrato, sin aislamiento de permisos del runtime |
 | `ac-change-planning` | Preparar planes técnicos verificables con unidades, dependencias, validaciones y puntos de decisión | `ac-change-planning/SKILL.md`; no implementa ni requiere OpenSpec u orquestación previa |
 | `ac-change-review` | Revisar diffs o implementaciones contra objetivos, alcance, restricciones y criterios | `ac-change-review/SKILL.md`; read-only por contrato y basado en evidencia |
@@ -34,7 +34,7 @@ la fuente externa puede cambiar después de esa fecha.
 
 | Skill | Uso | Relación y límites |
 | --- | --- | --- |
-| [`git-commit`](https://github.com/github/awesome-copilot/tree/main/skills/git-commit) | Base general para Conventional Commits y análisis de diffs | Es opcional; `ac-grouped-commits` no depende de ella y conserva sus propias reglas de aprobación y seguridad. |
+| [`git-commit`](https://github.com/github/awesome-copilot/tree/main/skills/git-commit) | Base general para Conventional Commits y análisis de diffs | Es opcional; `ac-grouped-commits` no depende de ella y conserva sus propias reglas de propuesta y seguridad. |
 | [`excalidraw-diagram-generator`](https://github.com/github/awesome-copilot/tree/main/skills/excalidraw-diagram-generator) | Crear diagramas de flujo, arquitectura, relaciones, secuencias y otros archivos `.excalidraw` | Complementa la exploración visual y la documentación arquitectónica. Solo es útil cuando se trabaja con el formato y el ecosistema Excalidraw. |
 | [`documentation-writer`](https://github.com/github/awesome-copilot/tree/main/skills/documentation-writer) | Redactar documentación técnica siguiendo Diátaxis | Es una skill opinada: exige identificar tipo de documento, audiencia, objetivo y alcance, y aprobar una estructura antes de redactar. No sustituye las convenciones documentales del repositorio. |
 | [`docs-sync-audit`](https://github.com/github/awesome-copilot/tree/main/skills/docs-sync-audit) | Auditar divergencias entre código, configuración, comandos y documentación | Complementa a `ac-change-review` con una auditoría documental read-only. No es una revisión general de código y debe mantenerse dentro del alcance documental necesario. |
@@ -88,8 +88,8 @@ parte de este catálogo.
 
 - Las skills externas amplían capacidades, pero no autorizan a cambiar el
   alcance, los permisos ni las reglas del toolkit.
-- `ac-grouped-commits` es la skill pública para organizar commits y no requiere
-  instalar `git-commit`.
+- `ac-grouped-commits` es la skill pública para organizar propuestas de commits y
+  no requiere instalar `git-commit`; no ejecuta staging ni crea commits.
 - Revisa el contenido de una skill antes de instalarla y compara los cambios
   antes de actualizar una instalación global existente.
 - Consulta las skills instaladas globalmente con `npx skills ls -g` y
