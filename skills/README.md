@@ -12,7 +12,7 @@ carpeta es únicamente el catálogo y no se instala como una skill.
 
 | Skill | Uso | Fuente y límites |
 | --- | --- | --- |
-| `ac-grouped-commits` | Agrupar cambios Git por intención y mostrar una propuesta completa sin modificar el repositorio | `ac-grouped-commits/SKILL.md`; es read-only, no depende de otra skill y no crea commits |
+| `ac-grouped-commits` | Agrupar cambios Git por intención y mostrar una propuesta completa como salida de la activación | `ac-grouped-commits/SKILL.md`; define el formato y el análisis de la propuesta |
 | `ac-change-impact-analysis` | Analizar impacto, superficie, consumidores, complejidad, riesgos e incertidumbres antes de implementar | `ac-change-impact-analysis/SKILL.md`; read-only por contrato, sin aislamiento de permisos del runtime |
 | `ac-change-planning` | Preparar planes técnicos verificables con unidades, dependencias, validaciones y puntos de decisión | `ac-change-planning/SKILL.md`; no implementa ni requiere OpenSpec u orquestación previa |
 | `ac-change-review` | Revisar diffs o implementaciones contra objetivos, alcance, restricciones y criterios | `ac-change-review/SKILL.md`; read-only por contrato y basado en evidencia |
@@ -51,8 +51,8 @@ npx skills update <name> --global
 
 ## Precedencia y mantenimiento
 
-- `ac-grouped-commits` es la skill pública para organizar propuestas de commits;
-  no ejecuta staging ni crea commits.
+- `ac-grouped-commits` es la skill pública para organizar propuestas de commits y
+  termina al entregar la propuesta completa.
 - Revisa el contenido de una skill antes de instalarla y compara los cambios
   antes de actualizar una instalación global existente.
 - Consulta las skills instaladas globalmente con `npx skills ls -g` y

@@ -72,18 +72,6 @@
         "La salida no contiene `## Fin de propuesta`.",
         "La salida no contiene instrucciones para staging o creación de commits."
       ]
-    },
-    {
-      "id": 7,
-      "prompt": "Después de que presentes la propuesta, pediré manualmente al agente que genere los commits. Define el límite de esta skill: incluso ante esa petición posterior, no debe ejecutar staging ni commits ni convertirse en un flujo interactivo.",
-      "expected_output": "La skill permanece estrictamente read-only y proposal-only; una petición posterior de generar commits debe gestionarse fuera de esta skill y no autoriza escrituras dentro de ella.",
-      "files": [],
-      "expectations": [
-        "La skill no crea commits ante una petición posterior.",
-        "La skill no modifica el index ni el working tree.",
-        "La skill no invoca herramientas de confirmación.",
-        "El límite proposal-only queda explícito."
-      ]
     }
   ]
 }
