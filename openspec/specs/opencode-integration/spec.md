@@ -16,11 +16,18 @@ al humano y exista una herramienta especializada disponible, SHALL utilizar esa
 herramienta en lugar de formular la pregunta directamente en el texto.
 
 En cada tarea SHALL intentar atomizar el trabajo en unidades cohesivas,
-independientes y verificables. Cuando haya subagentes disponibles, SHALL intentar
-delegar las unidades que puedan ejecutarse sin compartir la edición de un mismo
-archivo ni depender de resultados todavía inexistentes. La delegación SHALL
-transportar alcance, exclusiones, contexto, restricciones, criterios y
-validación suficientes. Si no hay subagentes disponibles o la atomización no
+independientes y verificables. Antes de delegar, el orquestador SHALL reunir un
+contexto proporcional que permita decidir si la delegación es apropiada,
+incluyendo el objetivo, el alcance afectado, las dependencias conocidas, la
+salida esperada y la validación necesaria. Solo SHALL delegar cuando pueda
+justificar que la unidad está suficientemente delimitada, que puede ejecutarse
+sin compartir la edición de un mismo archivo ni depender de resultados todavía
+inexistentes, y que la coordinación aporta un beneficio verificable. La
+delegación SHALL transportar alcance, exclusiones, contexto, restricciones,
+criterios y validación suficientes. Si la información disponible no permite
+tomar esa decisión, el agente SHALL inspeccionar primero la superficie
+relevante o continuar directamente; no SHALL delegar únicamente porque haya
+subagentes disponibles. Si no hay subagentes disponibles o la atomización no
 aporta valor real, el trabajo puede continuar de forma directa y SHALL informar
 brevemente el motivo.
 
@@ -43,17 +50,26 @@ requerida.
 - **THEN** realiza la pregunta mediante esa herramienta y no la presenta como
   una pregunta textual ordinaria
 
+#### Scenario: Evaluación previa a delegar
+
+- **WHEN** hay subagentes disponibles pero el contexto no permite decidir si una
+  unidad es independiente, está delimitada o aporta un beneficio de
+  coordinación
+- **THEN** el agente no delega todavía, inspecciona la superficie relevante o
+  continúa directamente con una justificación breve
+
 #### Scenario: Delegación de unidades independientes
 
-- **WHEN** hay subagentes disponibles y la tarea admite unidades independientes
-  y verificables
-- **THEN** el agente intenta atomizar y delegar esas unidades, asigna un único
+- **WHEN** el objetivo, el alcance, las dependencias, la salida y la validación
+  de una unidad ya son suficientes para comprobar que la delegación es
+  apropiada y la unidad es independiente y verificable
+- **THEN** el agente delega con un prompt autocontenido, asigna un único
   responsable por archivo y conserva las dependencias entre unidades
 
 #### Scenario: Trabajo directo justificado
 
-- **WHEN** no hay subagentes disponibles o dividir la tarea añadiría
-  coordinación sin beneficio verificable
+- **WHEN** no hay subagentes disponibles, falta información para justificar una
+  delegación o dividir la tarea añadiría coordinación sin beneficio verificable
 - **THEN** el agente continúa directamente e informa el motivo sin crear
   coordinación artificial
 
@@ -206,17 +222,21 @@ Las skills de análisis y revisión SHALL conservar la disciplina de contexto m�
 
 ### Requirement: Separación de configuraciones local y global
 
-La documentación del repositorio, principalmente el `README.md` raíz y el
-`AGENTS.md` raíz cuando corresponda, SHALL explicar que el
-`AGENTS.md` raíz y la configuración del proyecto consumidor pertenecen a ese
-proyecto, mientras `integrations/` contiene el respaldo versionado de
-la configuración portable que se instala manualmente bajo
-`~/.config/opencode/`. SHALL distinguir también la superficie pública de skills
-versionadas bajo `skills/`, las dependencias externas gestionadas por el CLI
-`skills` y la superficie interna `./.agents/`, que no forma parte del catálogo
-público ni de la instalación documentada. SHALL distinguir los commands globales
-de OpenCode que puedan existir en un consumidor de los workflows locales del
-proyecto y SHALL evitar instrucciones que mezclen ambas superficies.
+La documentación del repositorio SHALL explicar que el `AGENTS.md` raíz y la
+configuración del proyecto consumidor pertenecen a ese proyecto, mientras
+`integrations/` contiene el respaldo versionado de la configuración portable
+que se instala manualmente bajo `~/.config/opencode/`. SHALL distinguir la
+superficie pública de skills versionadas bajo `skills/` de la superficie interna
+`./.agents/`, que no forma parte del catálogo público ni de la instalación
+documentada. Los README activos SHALL quedar limitados a su propio scope: el
+README raíz SHALL ofrecer la visión general del repositorio y documentar la
+integración portable que no tiene README hijo; un README dentro de una carpeta
+SHALL ser la fuente de los detalles operativos de esa carpeta, y el README
+padre SHALL enlazarlo sin duplicar su contenido. La documentación SHALL
+distinguir los commands globales de OpenCode que puedan existir en un consumidor
+de los workflows locales del proyecto y SHALL evitar instrucciones que mezclen
+ambas superficies. Los README activos SHALL no catalogar, enlazar ni incluir
+comandos de instalación de skills de terceros.
 
 El respaldo SHALL usar nombres que no sean descubiertos automáticamente como
 reglas o configuración: `integrations/agents-global.md` para las reglas y
@@ -234,15 +254,22 @@ comparación, sincronización, migración y límites de esta integración. La
 documentación SHALL dejar de presentar recursos retirados o superficies locales
 como parte de la copia manual.
 
-#### Scenario: Consulta de la guia de integracion
+#### Scenario: Consulta de la guía de integración
 
-- **WHEN** un usuario consulta el `README.md` raíz o el
-  `AGENTS.md` raiz
+- **WHEN** un usuario consulta el `README.md` raíz o el `AGENTS.md` raíz
 - **THEN** puede identificar el propósito, los nombres de respaldo, los
   destinos operativos, la relación y los límites de las superficies sin
   depender de `integrations/opencode/README.md`
 
-#### Scenario: Aplicacion aislada de las reglas del toolkit
+#### Scenario: Alcance documental de una carpeta hija
+
+- **WHEN** un usuario necesita instrucciones específicas de `services/` o
+  `skills/`
+- **THEN** el README raíz enlaza el README hijo correspondiente y el README
+  hijo contiene los detalles de su scope sin exigir que el README raíz los
+  repita
+
+#### Scenario: Aplicación aislada de las reglas del toolkit
 
 - **WHEN** `integrations/agents-global.md` se encuentra bajo `integrations/`
   junto a la configuración portable de su scope
@@ -284,36 +311,42 @@ nombres públicos SHALL usar el prefijo `ac-`:
 `ac-release-tag-proposal` y `ac-pull-request`. La documentación SHALL permitir
 que el usuario seleccione el agente mediante el comportamiento neutral del CLI,
 sin recomendar ni imponer `opencode` u otro agente concreto. SHALL documentar
-la actualización mediante `npx skills update <name> --global`, distinguir las
-skills públicas de las dependencias externas opcionales y excluir explícitamente
-`./.agents/` de esta superficie. La sincronización manual de
-`integrations/` SHALL quedar limitada a la configuración y plugins que
-permanezcan, sin incluir agents o commands sustituidos, y SHALL mantener
-alineado el README raíz como única fuente documental de esta integración.
+la actualización mediante `npx skills update <name> --global` y excluir
+explícitamente `./.agents/` de esta superficie. `skills/README.md` SHALL
+concentrarse en las skills públicas versionadas y SHALL omitir catálogos,
+enlaces y comandos de instalación de skills de terceros. La sincronización
+manual de `integrations/` SHALL quedar limitada a la configuración y plugins
+que permanezcan, sin incluir agents o commands sustituidos, y SHALL mantener
+alineado el README raíz como única fuente documental de la integración
+portable.
 
 #### Scenario: Copia del respaldo portable
 
 - **WHEN** el usuario instala el respaldo portable de OpenCode
 - **THEN** puede sincronizar manualmente la configuración y los plugins que
-  permanezcan desde `integrations/` sin requerir que las skills
-  públicas formen parte de esa copia manual
+  permanezcan desde `integrations/` sin requerir que las skills públicas formen
+  parte de esa copia manual
 
-#### Scenario: Catálogo externo separado
+#### Scenario: Catálogo público acotado
 
-- **WHEN** el usuario consulta el catálogo de skills
-- **THEN** puede identificar las siete skills públicas versionadas en `skills/`,
-  las dependencias externas opcionales y la superficie interna excluida, sin
-  confundir el catálogo con una copia de `./.agents/`
+- **WHEN** el usuario consulta `skills/README.md`
+- **THEN** puede identificar las siete skills públicas versionadas, sus límites
+  y la exclusión de `./.agents/`, sin recibir un catálogo ni instrucciones de
+  instalación de skills de terceros
 
 #### Scenario: Skill pública instalable de forma neutral
 
 - **WHEN** un usuario quiere instalar una skill pública desde el repositorio
-- **THEN** encuentra un comando `npx skills add` con alcance global que usa el identificador público con prefijo `ac-`, no recomienda ni impone un agente concreto y no instala la skill en `./.agents/skills/`
+- **THEN** encuentra un comando `npx skills add` con alcance global que usa el
+  identificador público con prefijo `ac-`, no recomienda ni impone un agente
+  concreto y no instala la skill en `./.agents/skills/`
 
 #### Scenario: Actualización de una skill pública
 
-- **WHEN** una skill pública con identificador `ac-*` ya está instalada y el usuario quiere sincronizar una versión posterior
-- **THEN** puede ejecutar `npx skills update <name> --global` sin copiar manualmente la skill ni modificar el respaldo de `integrations/`
+- **WHEN** una skill pública con identificador `ac-*` ya está instalada y el
+  usuario quiere sincronizar una versión posterior
+- **THEN** puede ejecutar `npx skills update <name> --global` sin copiar
+  manualmente la skill ni modificar el respaldo de `integrations/`
 
 #### Scenario: Eliminación de documentación obsoleta
 

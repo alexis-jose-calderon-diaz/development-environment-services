@@ -31,17 +31,27 @@ revisión del alcance y el plan. No integres antes de revisar el resultado.
 
 ## Atomización y delegación
 
-- En cada tarea intenta atomizar el trabajo en unidades cohesivas,
-  independientes y verificables.
-- Cuando haya subagentes disponibles, intenta delegar las unidades que puedan
-  ejecutarse sin compartir la edición de un mismo archivo ni depender de
-  resultados todavía inexistentes.
-- Entrega a cada unidad su objetivo, alcance, exclusiones, contexto,
-  restricciones, criterios de aceptación y validación suficiente.
+- Antes de atomizar y delegar, inspecciona de forma proporcional la petición y
+  la superficie relevante para reunir información suficiente sobre el objetivo,
+  el alcance, los archivos o áreas afectadas, las dependencias, la salida
+  esperada y la validación necesaria.
+- No delegues solo porque haya subagentes disponibles. Delega únicamente cuando
+  puedas justificar que la unidad está delimitada, es cohesiva, independiente,
+  verificable y no comparte la edición de un mismo archivo ni depende de
+  resultados todavía inexistentes; la coordinación también debe aportar un
+  beneficio verificable.
+- Si la información disponible no permite decidir si delegar es apropiado,
+  inspecciona primero la superficie relevante o continúa directamente. No
+  inventes límites ni delegues una tarea de descubrimiento para reconstruir un
+  contexto que el orquestador todavía no ha establecido.
+- Entrega a cada unidad delegada un prompt autocontenido con su objetivo,
+  alcance, exclusiones, contexto, comportamiento existente y deseado,
+  restricciones, decisiones tomadas, dependencias, criterios de aceptación y
+  validación suficiente.
 - Mantén un único responsable por archivo durante una fase de edición.
 - Ejecuta en paralelo únicamente unidades independientes. Si la atomización no
-  aporta valor real o no hay subagentes disponibles, continúa directamente e
-  informa brevemente el motivo.
+  aporta valor real, la información sigue siendo insuficiente o no hay
+  subagentes disponibles, continúa directamente e informa brevemente el motivo.
 
 ## Prioridad del workdir
 

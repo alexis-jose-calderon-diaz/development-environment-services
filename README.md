@@ -6,62 +6,23 @@ Este repositorio complementa a `development-environment-host`: el repositorio ho
 
 ## Propósito
 
-El ambiente proporciona servicios Docker persistentes e independientes de cualquier aplicación concreta. PostgreSQL y pgAdmin forman el núcleo; los proyectos consumidores pueden conectarse mediante la red Docker externa `shared` sin agregar código ni configuración de esos proyectos a este repositorio.
+El ambiente proporciona servicios Docker persistentes e independientes de
+cualquier aplicación concreta. PostgreSQL y pgAdmin forman el núcleo; los
+proyectos consumidores pueden conectarse mediante la red Docker externa
+`shared` sin agregar código ni configuración de esos proyectos a este
+repositorio. La operación del Compose está documentada en la [guía de
+servicios](services/README.md).
 
 ## Componentes
 
-- `services/`: definición Docker Compose, variables de ejemplo y servicios compartidos del ambiente.
-- `skills/`: skills públicas versionadas y reutilizables. No incluye la superficie interna `./.agents/`.
+- `services/`: definición Docker Compose, variables de ejemplo y servicios
+  compartidos del ambiente. Consulta la [guía operativa](services/README.md).
+- `skills/`: skills públicas versionadas y reutilizables. Consulta el
+  [catálogo e instalación](skills/README.md); no incluye la superficie interna
+  `./.agents/`.
 - `integrations/`: respaldo versionado de la configuración portable global. Es una integración opcional; consulta la [sección de integración de OpenCode](#integración-opcional-de-opencode).
 - `openspec/`: especificaciones y cambios del workflow OpenSpec de este repositorio.
 - `.opencode/`: comandos y skills internos para trabajar con OpenSpec en este repositorio. No es el origen de la instalación global de OpenCode.
-
-## Requisitos
-
-- Docker Engine con Docker Compose disponible.
-- La red Docker externa `shared` creada antes del primer inicio.
-- Credenciales locales para pgAdmin en `services/.env`.
-
-El ambiente está diseñado como una instancia común por máquina. Sus puertos, nombres y volúmenes estables no permiten ejecutar varias instancias aisladas en el mismo host sin una configuración adicional fuera del alcance de este repositorio.
-
-## Inicio del ambiente
-
-Desde la raíz del repositorio:
-
-```bash
-cp services/.env.example services/.env
-docker network create shared
-docker compose --env-file services/.env -f services/docker-compose.yaml up -d
-docker compose --env-file services/.env -f services/docker-compose.yaml ps
-```
-
-Si `shared` ya existe, el primer comando de Docker devolverá un error; en ese caso continúa con los comandos de Compose. PostgreSQL queda disponible en `127.0.0.1:5432` y pgAdmin en [http://127.0.0.1:5050/pgadmin](http://127.0.0.1:5050/pgadmin), usando las credenciales definidas en `services/.env`.
-
-Para detener los servicios sin eliminar los datos persistentes:
-
-```bash
-docker compose --env-file services/.env -f services/docker-compose.yaml down
-```
-
-Los volúmenes se conservan entre reinicios. No uses `down --volumes` salvo que quieras eliminar explícitamente los datos del ambiente.
-
-## Acceso remoto opcional
-
-El perfil `tailscale` publica pgAdmin mediante HTTPS bajo la ruta `/pgadmin`, sin cambiar el endpoint local de PostgreSQL. Sustituye el valor de ejemplo de `WEB_GATEWAY_TS_AUTHKEY` por una credencial temporal y activa el perfil:
-
-```bash
-docker compose --env-file services/.env -f services/docker-compose.yaml --profile tailscale up -d
-```
-
-Después, accede a pgAdmin mediante `https://<dominio-tailscale>/pgadmin`.
-
-El núcleo de PostgreSQL y pgAdmin no requiere credenciales de Tailscale cuando el perfil no está activo.
-
-## Proyectos consumidores
-
-Los contenedores consumidores deben conectarse a la red externa `shared` y usar el servicio PostgreSQL del ambiente mediante los nombres y puertos documentados por Docker Compose. Este repositorio no conoce nombres de aplicaciones, migraciones ni schemas de los consumidores.
-
-PostgreSQL usa `POSTGRES_HOST_AUTH_METHOD=trust` para el desarrollo local. Cualquier contenedor conectado a `shared` debe considerarse confiable, porque esta política permite autenticación sin contraseña desde esa red. No reutilices esta configuración en redes no confiables ni en producción.
 
 ## Integración opcional de OpenCode
 
@@ -85,8 +46,9 @@ la segunda columna son los que se deben usar únicamente en la instalación
 operativa.
 
 Las skills públicas versionadas bajo `skills/` se instalan y actualizan por
-separado mediante `npx skills`; no forman parte de esta copia manual. La
-superficie interna `./.agents/` tampoco forma parte de la instalación global.
+separado; consulta el [catálogo de skills](skills/README.md). No forman parte
+de esta copia manual. La superficie interna `./.agents/` tampoco forma parte de
+la instalación global.
 
 ### Instalación manual
 
@@ -136,14 +98,3 @@ anterior contiene recursos adicionales, identifícalos mediante una comparación
 revisa cada diferencia y elimina manualmente solo los recursos obsoletos que no
 sean deliberados. Esta documentación no modifica ni limpia automáticamente
 `~/.config/opencode/`.
-
-## Operación y validación
-
-La configuración puede comprobarse sin iniciar contenedores:
-
-```bash
-docker compose --env-file services/.env.example -f services/docker-compose.yaml config --quiet
-docker compose --env-file services/.env.example -f services/docker-compose.yaml --profile tailscale config --quiet
-```
-
-No versiones `services/.env`, credenciales ni claves de Tailscale.
