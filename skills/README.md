@@ -98,7 +98,7 @@ parte de este catálogo.
   mismas.
 
 La instalación de skills públicas y la sincronización manual de la
-configuración portable son operaciones separadas. Consulta la [guía de
-integración](../integrations/opencode/README.md) para sincronizar reglas,
-commands y configuración. No copies este README ni uses `./.agents/` como
-fuente de skills públicas.
+configuración portable son operaciones separadas. Consulta la [sección de
+integración de OpenCode](../README.md#integración-opcional-de-opencode) para
+sincronizar reglas y configuración. No copies este README ni uses `./.agents/`
+como fuente de skills públicas.

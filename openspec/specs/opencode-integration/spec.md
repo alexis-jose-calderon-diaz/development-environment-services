@@ -6,6 +6,64 @@ Define el comportamiento seguro de la integración global de OpenCode al trabaja
 
 ## Requirements
 
+### Requirement: Ciclo de trabajo, preguntas y delegación portable
+
+La guía portable SHALL establecer un ciclo operativo ordenado de revisión del
+alcance, planificación, implementación, revisión, integración y finalización.
+El ciclo SHALL poder volver a una fase anterior cuando una decisión, hallazgo,
+validación o conflicto lo requiera. Cuando sea necesario formular una pregunta
+al humano y exista una herramienta especializada disponible, SHALL utilizar esa
+herramienta en lugar de formular la pregunta directamente en el texto.
+
+En cada tarea SHALL intentar atomizar el trabajo en unidades cohesivas,
+independientes y verificables. Cuando haya subagentes disponibles, SHALL intentar
+delegar las unidades que puedan ejecutarse sin compartir la edición de un mismo
+archivo ni depender de resultados todavía inexistentes. La delegación SHALL
+transportar alcance, exclusiones, contexto, restricciones, criterios y
+validación suficientes. Si no hay subagentes disponibles o la atomización no
+aporta valor real, el trabajo puede continuar de forma directa y SHALL informar
+brevemente el motivo.
+
+Todas las respuestas, resúmenes, feedback, mensajes de commit y textos de Pull
+Request dirigidos al humano SHALL estar en español. Los nombres técnicos,
+identificadores, rutas, comandos y tokens normativos podrán conservar su forma
+requerida.
+
+#### Scenario: Ciclo completo con repetición
+
+- **WHEN** una tarea requiere trabajo en varias fases
+- **THEN** se ejecuta en el orden alcance, plan, implementación, revisión,
+  integración y finalización, repitiendo las fases necesarias cuando la
+  evidencia cambie el alcance o el resultado esperado
+
+#### Scenario: Pregunta mediante herramienta especializada
+
+- **WHEN** el agente necesita una respuesta, aclaración o confirmación del
+  humano y existe una herramienta especializada disponible
+- **THEN** realiza la pregunta mediante esa herramienta y no la presenta como
+  una pregunta textual ordinaria
+
+#### Scenario: Delegación de unidades independientes
+
+- **WHEN** hay subagentes disponibles y la tarea admite unidades independientes
+  y verificables
+- **THEN** el agente intenta atomizar y delegar esas unidades, asigna un único
+  responsable por archivo y conserva las dependencias entre unidades
+
+#### Scenario: Trabajo directo justificado
+
+- **WHEN** no hay subagentes disponibles o dividir la tarea añadiría
+  coordinación sin beneficio verificable
+- **THEN** el agente continúa directamente e informa el motivo sin crear
+  coordinación artificial
+
+#### Scenario: Idioma de salida
+
+- **WHEN** el agente genera una respuesta, resumen, feedback, mensaje de commit
+  o texto de Pull Request para el humano
+- **THEN** usa español para el texto natural y conserva sin traducir los tokens
+  técnicos necesarios
+
 ### Requirement: Guia portable agnostica de workflow
 
 La configuracion portable SHALL limitar sus reglas obligatorias a herramientas disponibles, comportamiento, seguridad y convenciones generales de trabajo. No SHALL exigir una declaracion, identificador, snapshot, comando o protocolo perteneciente a un workflow externo para iniciar una tarea generica. Al ejecutar una tarea, SHALL priorizar la resolucion dentro del `workdir` efectivo y SHALL permitir el acceso externo solo cuando un recurso necesario no pueda obtenerse dentro de esa superficie. La guia y los contratos de agentes SHALL no imponer un formato general de rutas como condicion para trabajar.
@@ -148,45 +206,72 @@ Las skills de análisis y revisión SHALL conservar la disciplina de contexto m�
 
 ### Requirement: Separación de configuraciones local y global
 
-La documentación del repositorio, principalmente el `README.md` de la
-integración y el `AGENTS.md` raíz cuando corresponda, SHALL explicar que el
+La documentación del repositorio, principalmente el `README.md` raíz y el
+`AGENTS.md` raíz cuando corresponda, SHALL explicar que el
 `AGENTS.md` raíz y la configuración del proyecto consumidor pertenecen a ese
-proyecto, mientras `integrations/opencode/` contiene el respaldo versionado de
+proyecto, mientras `integrations/` contiene el respaldo versionado de
 la configuración portable que se instala manualmente bajo
 `~/.config/opencode/`. SHALL distinguir también la superficie pública de skills
 versionadas bajo `skills/`, las dependencias externas gestionadas por el CLI
 `skills` y la superficie interna `./.agents/`, que no forma parte del catálogo
 público ni de la instalación documentada. SHALL distinguir los commands globales
 de OpenCode que puedan existir en un consumidor de los workflows locales del
-proyecto y SHALL evitar instrucciones que mezclen ambas superficies. El
-`integrations/opencode/AGENTS.md` SHALL limitarse a reglas aplicables a los
-recursos dentro de su propio scope, ser agnóstico de ubicación y no asumir que
-es una política global, una instalación operativa o parte de un repositorio
-consumidor concreto. La documentación portable SHALL dejar de presentar
-agentes personalizados, protocolos de HANDOFF o los commands `tag` y `pr`
-eliminados como recursos instalables.
+proyecto y SHALL evitar instrucciones que mezclen ambas superficies.
+
+El respaldo SHALL usar nombres que no sean descubiertos automáticamente como
+reglas o configuración: `integrations/agents-global.md` para las reglas y
+`integrations/opencode-config.jsonc` para la configuración. La carpeta
+`integrations/opencode/` SHALL dejar de existir. La documentación SHALL indicar
+que se copian manualmente como `~/.config/opencode/AGENTS.md` y
+`~/.config/opencode/opencode.jsonc`, respectivamente. `agents-global.md` SHALL
+limitarse a reglas generales de su propio scope, ser agnóstico de ubicación y
+no asumir una política local, una instalación operativa ni un repositorio
+consumidor concreto.
+
+El README de la integración SHALL dejar de existir como fuente documental
+separada. El README raíz SHALL contener el propósito, inventario, instalación,
+comparación, sincronización, migración y límites de esta integración. La
+documentación SHALL dejar de presentar recursos retirados o superficies locales
+como parte de la copia manual.
 
 #### Scenario: Consulta de la guia de integracion
 
-- **WHEN** un usuario consulta el `README.md` de la integracion o el
+- **WHEN** un usuario consulta el `README.md` raíz o el
   `AGENTS.md` raiz
-- **THEN** puede identificar el propósito, la ubicación operativa, la relación
-  y los límites de `integrations/opencode/`, `skills/` y `./.agents/` sin
-  interpretar la superficie interna como un recurso público ni encontrar
-  agentes o commands eliminados en el inventario instalable
+- **THEN** puede identificar el propósito, los nombres de respaldo, los
+  destinos operativos, la relación y los límites de las superficies sin
+  depender de `integrations/opencode/README.md`
 
 #### Scenario: Aplicacion aislada de las reglas del toolkit
 
-- **WHEN** el `integrations/opencode/AGENTS.md` se aplica bajo cualquier ubicacion que contenga sus recursos de scope
-- **THEN** sus reglas se mantienen validas sin depender de una ruta de instalacion, un repositorio consumidor, una estructura de workflows o una politica local concreta
+- **WHEN** `integrations/agents-global.md` se encuentra bajo `integrations/`
+  junto a la configuración portable de su scope
+- **THEN** sus reglas se mantienen válidas sin depender de una ruta de
+  instalación, un repositorio consumidor, una estructura de workflows o una
+  política local concreta
+
+#### Scenario: Respaldo no descubierto automáticamente
+
+- **WHEN** OpenCode o un agente busca sus nombres convencionales dentro del
+  repositorio
+- **THEN** no carga `agents-global.md` como reglas ni
+  `opencode-config.jsonc` como configuración operativa
+
+#### Scenario: Instalación con nombres operativos
+
+- **WHEN** el usuario sincroniza manualmente la configuración portable
+- **THEN** copia `integrations/agents-global.md` a
+  `~/.config/opencode/AGENTS.md` y `integrations/opencode-config.jsonc` a
+  `~/.config/opencode/opencode.jsonc`, preservando separadas las reglas del
+  proyecto consumidor
 
 #### Scenario: Instalación portable sin commands sustituidos
 
-- **WHEN** el usuario sincroniza manualmente la configuracion portable
+- **WHEN** el usuario sincroniza manualmente la configuración portable
 - **THEN** copia únicamente los recursos de configuración y plugins que
-  permanezcan en `integrations/opencode/`, instala las skills públicas por
-  separado, conserva separadas las reglas y configuraciones del proyecto
-  consumidor y no copia `./.agents/`
+  permanezcan en `integrations/`, instala las skills públicas por separado,
+  conserva separadas las reglas y configuraciones del proyecto consumidor y no
+  copia `./.agents/`
 
 ### Requirement: Skill propia documentada como recurso portable
 
@@ -202,15 +287,15 @@ sin recomendar ni imponer `opencode` u otro agente concreto. SHALL documentar
 la actualización mediante `npx skills update <name> --global`, distinguir las
 skills públicas de las dependencias externas opcionales y excluir explícitamente
 `./.agents/` de esta superficie. La sincronización manual de
-`integrations/opencode/` SHALL quedar limitada a la configuración y plugins que
+`integrations/` SHALL quedar limitada a la configuración y plugins que
 permanezcan, sin incluir agents o commands sustituidos, y SHALL mantener
-alineados el README raíz y el README de la integración.
+alineado el README raíz como única fuente documental de esta integración.
 
 #### Scenario: Copia del respaldo portable
 
 - **WHEN** el usuario instala el respaldo portable de OpenCode
 - **THEN** puede sincronizar manualmente la configuración y los plugins que
-  permanezcan desde `integrations/opencode/` sin requerir que las skills
+  permanezcan desde `integrations/` sin requerir que las skills
   públicas formen parte de esa copia manual
 
 #### Scenario: Catálogo externo separado
@@ -228,7 +313,13 @@ alineados el README raíz y el README de la integración.
 #### Scenario: Actualización de una skill pública
 
 - **WHEN** una skill pública con identificador `ac-*` ya está instalada y el usuario quiere sincronizar una versión posterior
-- **THEN** puede ejecutar `npx skills update <name> --global` sin copiar manualmente la skill ni modificar el respaldo de `integrations/opencode/`
+- **THEN** puede ejecutar `npx skills update <name> --global` sin copiar manualmente la skill ni modificar el respaldo de `integrations/`
+
+#### Scenario: Eliminación de documentación obsoleta
+
+- **WHEN** el usuario consulta la documentación de la integración
+- **THEN** encuentra sus instrucciones en `README.md` raíz y no recibe un
+  enlace a `integrations/opencode/README.md`
 
 #### Scenario: Eliminación de commands sustituidos
 

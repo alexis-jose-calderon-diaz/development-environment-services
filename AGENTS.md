@@ -8,11 +8,10 @@
 ## Superficies
 
 - Las reglas de este `AGENTS.md` son locales a `development-environment-services`; no sustituyen las reglas de un proyecto consumidor ni la guía global instalada de OpenCode.
-- En el proyecto anfitrión, `AGENTS.md` y `.opencode/` son superficies locales. `.opencode/` contiene los workflows y comandos locales de OpenSpec; no lo mezcles con `integrations/opencode/` ni lo uses como origen de la instalación global.
-- `services/` es un entorno Docker Compose independiente de los proyectos consumidores; `integrations/opencode/` es el respaldo versionado y separado de la configuración global reutilizable.
+- En el proyecto anfitrión, `AGENTS.md` y `.opencode/` son superficies locales. `.opencode/` contiene los workflows y comandos locales de OpenSpec; no lo mezcles con `integrations/` ni lo uses como origen de la instalación global.
+- `services/` es un entorno Docker Compose independiente de los proyectos consumidores; `integrations/` es el respaldo versionado y separado de la configuración global reutilizable.
 - `skills/` contiene skills públicas versionadas para consumo externo. `./.agents/` y sus skills pertenecen al workflow interno del repositorio, quedan fuera de la superficie pública y no deben mezclarse con `skills/`.
-- `openspec/` contiene los artifacts del workflow OpenSpec local de este repositorio y también queda separado de `integrations/opencode/`.
-- Antes de modificar `integrations/opencode/`, lee `integrations/opencode/AGENTS.md`; esa guía contiene sus reglas específicas y no debe duplicarse aquí.
+- `openspec/` contiene los artifacts del workflow OpenSpec local de este repositorio y también queda separado de `integrations/`.
 
 ## Entorno Docker
 
@@ -32,7 +31,7 @@
 
 ## Integración global
 
-- La instalación global se copia manualmente desde el respaldo separado `integrations/opencode/` a `~/.config/opencode/`; compara ambas ubicaciones antes de sobrescribir y reinicia OpenCode tras cambiar la configuración instalada. `.opencode/` permanece como superficie local y no forma parte de este procedimiento.
+- La instalación global se copia manualmente desde el respaldo separado `integrations/` a `~/.config/opencode/`; compara ambas ubicaciones antes de sobrescribir y reinicia OpenCode tras cambiar la configuración instalada. `.opencode/` permanece como superficie local y no forma parte de este procedimiento.
 
 ## Validación
 
