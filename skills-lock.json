@@ -1,48 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "ac-change-impact-analysis": {
-      "source": "alexis-jose-calderon-diaz/development-environment-services",
-      "sourceType": "github",
-      "skillPath": "skills/ac-change-impact-analysis/SKILL.md",
-      "computedHash": "f64f24bc731f3b54aee1ce806c29a0c3ef17d33bc5c3284d39e0407b0529876a"
-    },
-    "ac-change-planning": {
-      "source": "alexis-jose-calderon-diaz/development-environment-services",
-      "sourceType": "github",
-      "skillPath": "skills/ac-change-planning/SKILL.md",
-      "computedHash": "1b889cf8f81b26108f1293d821746a9b1cff984d440349c32887c11e2423cf2c"
-    },
-    "ac-change-review": {
-      "source": "alexis-jose-calderon-diaz/development-environment-services",
-      "sourceType": "github",
-      "skillPath": "skills/ac-change-review/SKILL.md",
-      "computedHash": "3a634339c5c767d586395b95b10d926a1975f865381030a436901bcaf0cfd5a6"
-    },
-    "ac-grouped-commits": {
-      "source": "alexis-jose-calderon-diaz/development-environment-services",
-      "sourceType": "github",
-      "skillPath": "skills/ac-grouped-commits/SKILL.md",
-      "computedHash": "36cadf9269ff89f3c30490a3821feb88370ec341ea6c71f20e483068873c8b08"
-    },
-    "ac-integration-boundary-audit": {
-      "source": "alexis-jose-calderon-diaz/development-environment-services",
-      "sourceType": "github",
-      "skillPath": "skills/ac-integration-boundary-audit/SKILL.md",
-      "computedHash": "889cf209df4ef834c37a39a632d64f77ad0bd33bd26998498b19c9e386a04961"
-    },
-    "ac-pull-request": {
-      "source": "alexis-jose-calderon-diaz/development-environment-services",
-      "sourceType": "github",
-      "skillPath": "skills/ac-pull-request/SKILL.md",
-      "computedHash": "8a3e3fe3522dab90a5bf9edb117b31826ec669f9eb09d06350faedec75b3e2bc"
-    },
-    "ac-release-tag-proposal": {
-      "source": "alexis-jose-calderon-diaz/development-environment-services",
-      "sourceType": "github",
-      "skillPath": "skills/ac-release-tag-proposal/SKILL.md",
-      "computedHash": "9d95cd16df1c57cd7bcf0252f4717d0c475b4aa7ba6508ff265c3353f57bbb62"
-    },
     "openspec-apply-change": {
       "source": "Fission-AI/OpenSpec",
       "sourceType": "github",
