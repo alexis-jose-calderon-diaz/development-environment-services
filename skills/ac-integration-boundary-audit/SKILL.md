@@ -1,186 +1,187 @@
 ---
 name: ac-integration-boundary-audit
-description: Audita de forma read-only si las piezas de un cambio distribuido encajan entre sí. Activa esta skill cuando el usuario pida comprobar fronteras entre implementación, contratos, clientes o consumidores, modelos, persistencia, migraciones, salidas generadas y tests, o cuando necesite identificar incompatibilidades, bloqueos o decisiones de diseño antes de corregirlas. No la uses para implementar cambios, revisar estilo interno ni organizar commits.
+description: Audit read-only whether the pieces of a distributed change fit together. Activate this skill when the user asks to check boundaries between implementation, contracts, clients or consumers, models, persistence, migrations, generated outputs, and tests, or needs to identify incompatibilities, blockers, or design decisions before correcting them. Do not use it to implement changes, review internal style, or organize commits.
 ---
 
 # Integration Boundary Audit
 
-Audita la coherencia entre las piezas directamente relacionadas con un cambio. El
-objetivo es responder si las interfaces siguen encajando, no inspeccionar todo el
-repositorio ni sustituir una revisión general de calidad.
+Audit coherence between the pieces directly related to a change. The objective is
+to determine whether interfaces still fit, not to inspect the entire repository
+or replace a general quality review.
 
-## Límite read-only
+## Read-Only Limit
 
-No edites, crees, elimines ni formatees archivos. No apliques correcciones
-automáticas aunque encuentres una incompatibilidad concreta. Informa la evidencia,
-el impacto y la acción recomendada para que el usuario decida el siguiente paso.
+Do not edit, create, delete, or format files. Do not apply automatic corrections
+even when you find a concrete incompatibility. Report the evidence, impact, and
+recommended action so the user can decide the next step.
 
-Esta instrucción read-only es un contrato de comportamiento, no un aislamiento de
-permisos del runtime: una skill se carga dentro del agente seleccionado. Si se
-requiere una garantía efectiva de no modificación, el usuario debe ejecutar la
-auditoría con un agente o modo cuyos permisos sean read-only.
+This read-only instruction is a behavior contract, not runtime permission
+isolation: a skill loads inside the selected agent. If an effective no-modification
+guarantee is required, the user must run the audit with an agent or mode whose
+permissions are read-only.
 
-No dependas de un prompt de orquestador, un `Scope` delegado, un `Analysis Report`,
-un identificador OpenSpec ni una sesión previa. Trabaja con la petición actual, el
-estado del repositorio y la evidencia que el usuario proporcione. No delegues el
-trabajo a otros agentes.
+Do not depend on an orchestrator prompt, delegated `Scope`, an `Analysis Report`,
+an OpenSpec identifier, or a prior session. Work from the current request, the
+repository state, and evidence provided by the user. Do not delegate work to
+other agents.
 
-## Procedimiento
+Respond in the user's requested language; use English when no response language
+is specified. Preserve the fixed boundary and global status values.
 
-1. **Delimita la auditoría.** Extrae el objetivo, el cambio o diff a comprobar, el
-   alcance, las exclusiones, los criterios disponibles y las validaciones
-   relevantes. Si falta información, inspecciona solo el contexto mínimo que pueda
-   establecer la frontera; no inventes contratos ni asumas que una pieza funciona.
-2. **Identifica la superficie.** Enumera los módulos, archivos modificados o
-   relevantes, contratos afectados, modelos, almacenamiento, migraciones, salidas
-   generadas, consumidores y tests. Prioriza el diff y las referencias directas.
-3. **Traza cada frontera aplicable.** Compara nombres, tipos, parámetros,
-   respuestas, formatos, versiones, rutas, comportamiento y errores entre ambos
-   lados. Comprueba únicamente las fronteras necesarias para el cambio:
-    implementación → contratos, contratos → consumidores, modelo → persistencia,
-    persistencia → migraciones, modelo → salidas generadas, implementación → tests
-    y salidas generadas → consumidores.
-4. **Busca evidencia suficiente.** Usa lecturas, búsquedas y validaciones
-   proporcionales. Distingue hechos observados de inferencias. Si una frontera no
-   tiene evidencia suficiente, márcala `NO VERIFICADA` (o `NO APLICA` cuando no
-   pertenezca a la superficie), nunca como éxito.
-5. **Clasifica los resultados.** Reporta solo incompatibilidades respaldadas por
-   evidencia. Asigna `CRITICAL`, `HIGH`, `MEDIUM` o `LOW`, e indica la frontera,
-   rutas, evidencia concreta, impacto y acción recomendada. Una incompatibilidad
-   que requiera cambiar una decisión pública, ampliar alcance, escoger entre
-   diseños o autorizar una modificación es un bloqueo; no inventes una solución.
-6. **Registra validaciones.** Ejecuta build, tests, generación, type checking,
-   linting o comparación de salidas solo cuando aporten evidencia sobre una
-   frontera. Registra el comando, la superficie cubierta y el resultado. Una
-   validación ausente, fallida o invalidada por cambios posteriores no es un
-   `PASS`.
+## Procedure
 
-### Estados y evidencia
+1. **Scope the audit.** Extract the objective, change or diff to check, scope,
+   exclusions, available criteria, and relevant validations. If information is
+   missing, inspect only the minimum context that can establish the boundary; do
+   not invent contracts or assume a piece works.
+2. **Identify the surface.** List modified or relevant modules and files, affected
+   contracts, models, storage, migrations, generated outputs, consumers, and
+   tests. Prioritize the diff and direct references.
+3. **Trace each applicable boundary.** Compare names, types, parameters,
+   responses, formats, versions, paths, behavior, and errors on both sides. Check
+   only the boundaries necessary for the change:
+     implementation → contracts, contracts → consumers, model → persistence,
+     persistence → migrations, model → generated outputs, implementation → tests,
+     and generated outputs → consumers.
+4. **Find sufficient evidence.** Use proportional reads, searches, and
+   validations. Distinguish observed facts from inferences. If a boundary lacks
+   sufficient evidence, mark it `NO VERIFICADA` (or `NO APLICA` when outside the
+   surface), never as a success.
+5. **Classify results.** Report only evidence-backed incompatibilities. Assign
+   `CRITICAL`, `HIGH`, `MEDIUM`, or `LOW`, and state the boundary, paths, concrete
+   evidence, impact, and recommended action. An incompatibility requiring a
+   public-decision change, scope expansion, design choice, or authorization is a
+   blocker; do not invent a solution.
+6. **Record validations.** Run builds, tests, generation, type checking, linting,
+   or output comparisons only when they provide evidence about a boundary. Record
+   the command, covered surface, and result. A missing, failed, or invalidated
+   validation is not a `PASS`.
 
-`NO VERIFICADA` significa ausencia o insuficiencia de evidencia: no implica que
-exista un defecto. Explica qué archivo, consumidor, resultado o validación falta y
-no lo sustituyas por una inferencia. `FAIL` en una frontera significa una
-incompatibilidad concreta demostrada por dos lados comparables. Si esa
-incompatibilidad, o una compatibilidad de datos pendiente, exige elegir un diseño,
-cambiar un contrato público, ampliar el alcance o recibir autorización, conserva
-el hallazgo como bloqueo y usa `BLOCKED` para el estado global; no elijas por el
-usuario. Una decisión explícitamente demostrada en el material auditado también
-puede cerrar la frontera como `PASS`, pero una decisión pendiente es `BLOCKED`.
+### States and Evidence
 
-Calcula el estado global con esta precedencia:
+`NO VERIFICADA` means missing or insufficient evidence; it does not imply a defect
+exists. Explain which file, consumer, result, or validation is missing and do not
+replace it with an inference. `FAIL` on a boundary means a concrete
+incompatibility demonstrated by two comparable sides. If that incompatibility or
+pending data compatibility requires choosing a design, changing a public contract,
+expanding scope, or receiving authorization, retain the finding as a blocker and
+use `BLOCKED` for the global status; do not choose for the user. An explicitly
+demonstrated decision in the audited material can close a boundary as `PASS`, but
+a pending decision is `BLOCKED`.
 
-1. `BLOCKED`: existe al menos un bloqueo de diseño, compatibilidad o autorización
-   sin resolver, aunque otras fronteras pasen.
-2. `FAIL`: existe una incompatibilidad demostrada que no requiere una decisión de
-   diseño para actuar y no hay un bloqueo de mayor precedencia.
-3. `PASS WITH WARNINGS`: no hay incompatibilidades ni bloqueos, pero queda al
-   menos una frontera `NO VERIFICADA`, validación ausente o riesgo residual
-   explícito.
-4. `PASS`: todas las fronteras aplicables están verificadas y pasan, y no quedan
-   hallazgos, validaciones relevantes ausentes ni riesgos pendientes.
+Calculate the global status with this precedence:
 
-No confundas `NO VERIFICADA` con `BLOCKED`: la primera describe lo que aún no se
-pudo demostrar; la segunda describe una incompatibilidad o decisión pendiente ya
-demostrada que impide cerrar la integración.
+1. `BLOCKED`: at least one unresolved design, compatibility, or authorization
+   blocker exists, even if other boundaries pass.
+2. `FAIL`: a demonstrated incompatibility exists that does not require a design
+   decision to act on and there is no higher-precedence blocker.
+3. `PASS WITH WARNINGS`: there are no incompatibilities or blockers, but at least
+   one boundary is `NO VERIFICADA`, a validation is missing, or an explicit
+   residual risk remains.
+4. `PASS`: all applicable boundaries are verified and pass, with no findings,
+   missing relevant validations, or pending risks.
 
-## Qué comprobar
+Do not confuse `NO VERIFICADA` with `BLOCKED`: the first describes what could not
+yet be demonstrated; the second describes a demonstrated incompatibility or
+pending decision that prevents closing the integration.
 
-- **Implementación → contratos:** firmas, tipos, estados, errores, versiones y
-  comportamiento expuesto.
-- **Contratos → consumidores:** clientes, adaptadores, comandos, endpoints,
-  eventos o documentación que consuman nombres, formatos y respuestas.
-- **Modelo → persistencia:** campos, nulabilidad, serialización, relaciones,
-  índices y conversiones.
-- **Persistencia → migraciones:** esquema esperado, orden, defaults, reversibilidad
-  cuando aplique y compatibilidad con datos existentes.
-- **Modelo → salidas generadas:** campos, tipos, nulabilidad, nombres,
-  serialización y cualquier otra representación que el generador deba producir.
-- **Implementación → tests:** casos que realmente ejerciten la interfaz cambiada,
-  aserciones coherentes y brechas de cobertura relevantes.
-- **Salidas generadas → consumidores:** archivos, código, artefactos o reportes
-  producidos; formato, ubicación, nombres y consumidores que dependan de ellos.
+## What to Check
 
-No conviertas la auditoría en una inspección de estilo, refactor, seguridad
-genérica o implementación. No reportes problemas hipotéticos sin una ruta,
-contrato, resultado o referencia concreta que los sustente.
+- **Implementation → contracts:** signatures, types, states, errors, versions,
+  and exposed behavior.
+- **Contracts → consumers:** clients, adapters, commands, endpoints, events, or
+  documentation consuming names, formats, and responses.
+- **Model → persistence:** fields, nullability, serialization, relationships,
+  indexes, and conversions.
+- **Persistence → migrations:** expected schema, ordering, defaults,
+  reversibility when applicable, and compatibility with existing data.
+- **Model → generated outputs:** fields, types, nullability, names, serialization,
+  and any other representation the generator must produce.
+- **Implementation → tests:** cases that actually exercise the changed interface,
+  coherent assertions, and relevant coverage gaps.
+- **Generated outputs → consumers:** produced files, code, artifacts, or reports;
+  format, location, names, and dependent consumers.
 
-El estilo queda fuera de alcance aunque sea inconsistente. Solo entra en la
-auditoría si el supuesto problema de estilo cambia una interfaz o contrato que
-otro componente consume (por ejemplo, nombre, tipo, formato, ruta o serialización);
-en ese caso reporta el efecto de compatibilidad, no una preferencia estética.
+Do not turn the audit into a style inspection, refactor, generic security review,
+or implementation. Do not report hypothetical problems without a concrete path,
+contract, result, or reference supporting them.
 
-## Informe
+Style is out of scope even when inconsistent. It enters the audit only if the
+alleged style problem changes an interface or contract consumed by another
+component (for example, name, type, format, path, or serialization); in that case
+report the compatibility effect, not an aesthetic preference.
 
-Devuelve un informe conciso con esta estructura. Conserva `/` como separador y usa
-rutas válidas con los directorios necesarios.
+## Report
+
+Return a concise report with this structure. Preserve `/` as the separator and
+use valid paths with the necessary directories.
 
 ```markdown
 # Integration Boundary Audit
 
-## Estado
+## Status
 
 `PASS` | `PASS WITH WARNINGS` | `FAIL` | `BLOCKED`
 
-Aplica la precedencia definida arriba. No uses `FAIL` o `BLOCKED` para rellenar
-evidencia ausente: una frontera sin prueba es `NO VERIFICADA` y normalmente deja
-el estado global en `PASS WITH WARNINGS`, salvo que exista además un bloqueo.
+Apply the precedence defined above. Do not use `FAIL` or `BLOCKED` to fill missing
+evidence: an unproven boundary is `NO VERIFICADA` and normally leaves the global
+status `PASS WITH WARNINGS`, unless a blocker also exists.
 
-## Bloqueos
+## Blockers
 
-- `None`, o cada bloqueo con causa concreta, evidencia, superficie afectada y
-  decisión o acción requerida.
+- `None`, or each blocker with a concrete cause, evidence, affected surface, and
+  required decision or action.
 
-## Superficie verificada
+## Verified Surface
 
-- Módulos:
-- Archivos modificados o relevantes:
-- Contratos:
-- Modelos y persistencia:
-- Migraciones:
-- Salidas generadas:
-- Consumidores:
+- Modules:
+- Modified or relevant files:
+- Contracts:
+- Models and persistence:
+- Migrations:
+- Generated outputs:
+- Consumers:
 - Tests:
 
-## Fronteras verificadas
+## Verified Boundaries
 
-- Implementación → Contratos: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
-- Contratos → Consumidores: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
-- Modelo → Persistencia: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
-- Persistencia → Migraciones: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
-- Modelo → Salidas generadas: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
-- Implementación → Tests: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
-- Salidas generadas → Consumidores: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
+- Implementation → Contracts: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
+- Contracts → Consumers: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
+- Model → Persistence: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
+- Persistence → Migrations: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
+- Model → Generated outputs: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
+- Implementation → Tests: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
+- Generated outputs → Consumers: `PASS` | `FAIL` | `NO VERIFICADA` | `NO APLICA`
 
-## Hallazgos
+## Findings
 
-Para cada hallazgo incluye:
+For each finding include:
 
-- severidad: `CRITICAL` | `HIGH` | `MEDIUM` | `LOW`
-- frontera:
-- archivos:
-- descripción:
-- evidencia:
-- impacto:
-- acción recomendada:
+- severity: `CRITICAL` | `HIGH` | `MEDIUM` | `LOW`
+- boundary:
+- files:
+- description:
+- evidence:
+- impact:
+- recommended action:
 
-Escribe `Ninguno` cuando no haya hallazgos.
+Write `None` when there are no findings.
 
-## Validaciones ejecutadas
+## Validations Run
 
-- comando: resultado y superficie cubierta
+- command: result and covered surface
 
-## Riesgos pendientes
+## Pending Risks
 
-- Riesgos residuales, incertidumbres o brechas de evidencia; `Ninguno` si no
-  quedan.
+- Residual risks, uncertainties, or evidence gaps; `None` when none remain.
 
-## Resumen para el usuario
+## User Summary
 
-Estado general, fronteras no verificadas, bloqueos, siguiente decisión o acción
-recomendada. No afirmes correcciones aplicadas: esta skill nunca modifica archivos.
+Overall status, unverified boundaries, blockers, next decision, or recommended
+action. Do not claim corrections were applied: this skill never modifies files.
 ```
 
-Cuando el contexto no permita auditar una frontera, explica qué evidencia falta y
-qué tendría que aportar el usuario o una futura validación. Si una incompatibilidad
-requiere una decisión de diseño, conserva el estado `BLOCKED` aunque las demás
-fronteras pasen.
+When the context does not allow a boundary to be audited, explain what evidence is
+missing and what the user or a future validation would need to provide. If an
+incompatibility requires a design decision, retain `BLOCKED` even when the other
+boundaries pass.

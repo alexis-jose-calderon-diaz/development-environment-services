@@ -1,167 +1,165 @@
 ---
 name: ac-change-planning
-description: Crea planes técnicos verificables para cambios de software. Activa esta skill cuando el usuario pida planificar, descomponer, ordenar o preparar la ejecución de una tarea, aunque no proporcione un Analysis Report, un identificador OpenSpec ni una delegación previa; inspecciona el contexto mínimo necesario y no implementes el cambio.
+description: Create verifiable technical plans for software changes. Activate this skill when the user asks to plan, break down, order, or prepare the execution of a task, even without an Analysis Report, OpenSpec identifier, or prior delegation; inspect the minimum necessary context and do not implement the change.
 ---
 
-# Planificación de cambios
+# Change Planning
 
-Convierte una petición de cambio en un plan de ejecución claro, comprobable y
-acotado. La skill es un workflow iniciado por el usuario: trabaja con la
-petición y el estado disponible del repositorio, sin esperar un prompt de
-orquestador, un informe de otra skill ni un `Scope` implícito.
+Turn a change request into a clear, verifiable, and bounded execution plan. The
+skill is a user-started workflow: work from the request and the repository state
+available without waiting for an orchestrator prompt, another skill's report, or
+an implicit `Scope`.
 
-## Límites
+## Limits
 
-- Produce planificación; no implementes, edites, elimines ni corrijas archivos.
-- No delegues, no crees subagentes y no asignes ownership o permisos de agentes.
-- No presentes estas instrucciones como una barrera de permisos: una skill se
-  carga dentro del agente actual. Si se requiere aislamiento read-only efectivo,
-  el agente seleccionado y sus permisos deben proporcionarlo.
-- No inventes rutas, dependencias, criterios ni decisiones. Marca como
-  `UNKNOWN`, `BLOCKED` o pendiente aquello que no pueda confirmarse.
-- No repitas una exploración global. Lee primero la petición y el contexto que
-  el usuario entregue; inspecciona solo archivos, configuración o contratos
-  directamente relevantes para cerrar una decisión del plan.
-- El plan debe ser autosuficiente y ejecutable por el agente principal. La
-  delegación, un orquestador o un agente sugerido son opcionales, nunca un
-  prerrequisito. Mantén el trabajo de planificación read-only: no edites el
-  repositorio ni produzcas cambios como efecto colateral.
+- Produce planning; do not implement, edit, delete, or fix files.
+- Do not delegate, create subagents, or assign ownership or agent permissions.
+- Do not present these instructions as a permission barrier: a skill loads inside
+  the current agent. If effective read-only isolation is required, the selected
+  agent and its permissions must provide it.
+- Do not invent paths, dependencies, criteria, or decisions. Mark anything that
+  cannot be confirmed as `UNKNOWN`, `BLOCKED`, or pending.
+- Do not repeat a global exploration. Read the request and user-provided context
+  first; inspect only files, configuration, or contracts directly relevant to
+  closing a planning decision.
+- The plan must be self-contained and executable by the main agent. Delegation,
+  an orchestrator, or a suggested agent is optional and never a prerequisite.
+  Keep planning read-only: do not edit the repository or produce side effects.
+- Respond in the user's requested language; use English when no response language is specified.
 
-## Método
+## Method
 
-### 1. Delimitar el cambio
+### 1. Scope the Change
 
-Extrae el objetivo, resultado esperado, alcance, exclusiones, restricciones,
-criterios de aceptación y validaciones conocidas. Distingue los datos
-esenciales para delimitar el trabajo (por ejemplo, una ruta, una opción de
-compatibilidad o una decisión que cambie el contrato) de los datos que pueden
-confirmarse durante una unidad.
+Extract the objective, expected result, scope, exclusions, constraints,
+acceptance criteria, and known validations. Distinguish information essential to
+bound the work (for example, a path, compatibility option, or contract-changing
+decision) from information that can be confirmed during a unit.
 
-Si falta un dato esencial, no explores globalmente para inferirlo: devuelve un
-plan mínimo marcado `BLOCKED`, pide únicamente ese dato exacto y detén la
-planificación que dependa de él. Ese plan mínimo puede enumerar las unidades
-independientes que sí estén suficientemente delimitadas, pero no inventa rutas,
-decisiones ni criterios para la unidad bloqueada. La ausencia de un Analysis
-Report, de una delegación o de contexto formal no es por sí sola un bloqueo.
+If an essential datum is missing, do not explore globally to infer it: return a
+minimal plan marked `BLOCKED`, request only that exact datum, and stop planning
+that depends on it. The minimal plan may list independent units that are
+sufficiently bounded, but it must not invent paths, decisions, or criteria for
+the blocked unit. The absence of an Analysis Report, delegation, or formal
+context is not by itself a blocker.
 
-### 2. Inspeccionar el contexto mínimo
+### 2. Inspect the Minimum Context
 
-Cuando la petición no sea suficiente, realiza una inspección proporcional:
+When the request is insufficient, perform a proportional inspection:
 
-1. Identifica la raíz y el estado relevante del repositorio, sin modificarlo.
-2. Busca las rutas, símbolos, contratos, configuración y pruebas directamente
-   relacionados con el objetivo.
-3. Amplía la lectura únicamente a una dependencia crítica o consumidor que
-   cambie la delimitación, el orden o la validación.
-4. Distingue hechos confirmados, supuestos e incertidumbres con evidencia.
+1. Identify the repository root and relevant state without modifying it.
+2. Search for paths, symbols, contracts, configuration, and tests directly
+   related to the objective.
+3. Expand reading only to a critical dependency or consumer that changes scope,
+   ordering, or validation.
+4. Distinguish confirmed facts, assumptions, and uncertainties with evidence.
 
-Si el usuario ya proporcionó contexto suficiente, úsalo sin volver a explorar
-todo el repositorio. Si falta información esencial, no hagas esta inspección:
-solicita primero el dato faltante. No ejecutes comandos con efectos
-secundarios.
+If the user already provided enough context, use it without re-exploring the
+entire repository. If essential information is missing, do not perform this
+inspection: request the missing datum first. Do not run commands with side
+effects.
 
-### 3. Formar unidades ejecutables
+### 3. Form Executable Units
 
-Divide por resultados cohesionados y verificables. Cada unidad debe tener áreas
-exclusivas: no asignes el mismo archivo o área modificable a dos unidades.
-Prefiere una sola unidad cuando dividir añada coordinación sin una ganancia
-real. Separa el trabajo que pueda avanzar independientemente del que dependa de
-una decisión, contrato, salida o validación anterior. Si una unidad dependiente
-queda `BLOCKED`, conserva y planifica las unidades independientes que ya tengan
-alcance, archivos y criterios suficientes; no bloquees el plan completo.
+Divide by cohesive, verifiable outcomes. Each unit must have exclusive areas: do
+not assign the same file or modifiable area to two units. Prefer one unit when
+splitting adds coordination without real benefit. Separate work that can advance
+independently from work dependent on a prior decision, contract, output, or
+validation. If a dependent unit is `BLOCKED`, retain and plan independent units
+that already have sufficient scope, files, and criteria; do not block the whole
+plan.
 
-Cuando varias unidades consuman un contrato compartido, asigna la definición y
-el cambio del contrato a una única unidad propietaria. Registra cada consumidor
-en `Dependencies` apuntando a ese contrato/unidad, aunque sus archivos sean
-exclusivos; no repartas la propiedad del contrato ni dupliques su modificación.
-Si documentación, validación o retirada tienen archivos, responsables o
-criterios distintos, conviértelas en unidades separadas y enlázalas a las
-unidades cuyo resultado necesiten.
+When multiple units consume a shared contract, assign the contract definition and
+change to one owner unit. Record each consumer in `Dependencies` pointing to
+that contract/unit even when their files are exclusive; do not split contract
+ownership or duplicate its modification. If documentation, validation, or
+retirement have different files, owners, or criteria, make them separate units
+and link them to the units whose results they need.
 
-Para cada unidad define `Scope` y `Out of Scope` por separado. Incluye una
-validación concreta que pueda demostrar el resultado, no solo una actividad
-genérica como “revisar cambios”.
+For each unit define `Scope` and `Out of Scope` separately. Include a concrete
+validation that can demonstrate the result, not only a generic activity such as
+"review changes".
 
-### 4. Ordenar y decidir
+### 4. Order and Decide
 
-- Usa `Parallel` solo cuando las unidades no compartan áreas modificables ni
-  dependan de resultados ajenos.
-- Usa `Sequential` cuando una unidad consuma una salida, contrato, decisión o
-  validación previa; explica la razón. Una dependencia bloqueada no impide
-  marcar como `Parallel` y planificar otra unidad independiente.
-- Indica condiciones de inicio, integración posterior y el punto donde debe
-  detenerse el trabajo si aparece un bloqueo.
-- Si el alcance no puede cerrarse con evidencia suficiente, conserva la unidad
-  como `BLOCKED`. Para un dato esencial ausente, el informe debe pedir solo la
-  ruta, opción o decisión concreta que falta; no sustituyas esa petición por
-  una exploración global ni por supuestos.
+- Use `Parallel` only when units share no modifiable areas and do not depend on
+  other results.
+- Use `Sequential` when a unit consumes a prior output, contract, decision, or
+  validation; explain why. A blocked dependency does not prevent marking and
+  planning another independent unit as `Parallel`.
+- State start conditions, later integration, and where work must stop if a block
+  appears.
+- If scope cannot be closed with sufficient evidence, keep the unit as `BLOCKED`.
+  For a missing essential datum, the report must request only the missing path,
+  option, or decision; do not replace that request with global exploration or
+  assumptions.
 
-## Formato de salida
+## Output Format
 
-Devuelve únicamente el informe Markdown siguiente, sin preámbulos ni bloques de
-código. Sustituye los marcadores por información concreta; usa `None` solo
-cuando la ausencia esté confirmada.
+Return only the following Markdown report, without preambles or code blocks.
+Replace placeholders with concrete information; use `None` only when absence is
+confirmed.
 
 # Execution Plan
 
 ## Objective
 
-Resume el objetivo y el resultado verificable esperado.
+Summarize the objective and expected verifiable result.
 
 ## Scope and Assumptions
 
-Indica:
+State:
 
-- **Scope:** lo que se ejecutará.
-- **Out of Scope:** lo que se excluye explícitamente.
-- **Assumptions:** supuestos respaldados o necesarios.
-- **Uncertainties:** dudas, evidencia faltante y decisiones requeridas.
+- **Scope:** what will be executed.
+- **Out of Scope:** what is explicitly excluded.
+- **Assumptions:** supported or necessary assumptions.
+- **Uncertainties:** questions, missing evidence, and required decisions.
 
 ## Work Breakdown
 
-Para cada unidad usa exactamente esta información. Marca `BLOCKED` en el nombre
-u objetivo cuando corresponda y señala el dato exacto que la desbloquea.
+For each unit use exactly this information. Mark the name or objective
+`BLOCKED` when applicable and identify the exact datum that unlocks it.
 
-### Unit N — nombre breve
+### Unit N — brief name
 
-- **Objective:** resultado único de la unidad.
-- **Files/Areas:** rutas o áreas exclusivas asignadas.
-- **Required Context:** información mínima para ejecutarla.
-- **Dependencies:** unidades, contratos o decisiones previas; `None` si no hay.
-- **Mode:** `Parallel` o `Sequential`, con razón breve.
-- **Suggested Agent:** rol recomendado o `agente principal`; es informativo, no
-  obligatorio. No inventes un agente ni dependas de una delegación.
-- **Validation:** comprobación concreta y evidencia esperada.
-- **Scope:** límites incluidos en esta unidad.
-- **Out of Scope:** exclusiones específicas de esta unidad.
+- **Objective:** single outcome of the unit.
+- **Files/Areas:** exclusive assigned paths or areas.
+- **Required Context:** minimum information needed to execute it.
+- **Dependencies:** prior units, contracts, or decisions; `None` when absent.
+- **Mode:** `Parallel` or `Sequential`, with a brief reason.
+- **Suggested Agent:** recommended role or `main agent`; informational, not
+  mandatory. Do not invent an agent or depend on delegation.
+- **Validation:** concrete check and expected evidence.
+- **Scope:** limits included in this unit.
+- **Out of Scope:** exclusions specific to this unit.
 
 ## Dependency Graph
 
-Representa las relaciones entre unidades. Señala grupos `Parallel`, enlaces
-`Sequential` y razones. Usa `None` si todas son independientes.
+Represent relationships between units. Mark `Parallel` groups, `Sequential`
+links, and reasons. Use `None` if all are independent.
 
 ## Execution Order
 
-Enumera el orden recomendado, las condiciones para iniciar cada grupo, los
-resultados que deben pasar al siguiente y la integración posterior.
+List the recommended order, conditions for starting each group, results that
+must pass to the next, and later integration.
 
 ## Integration and Validation
 
-Describe cómo comprobar que las unidades encajan: contratos entre fronteras,
-archivos compartidos, pruebas, documentación, configuración y validaciones
-finales aplicables. Distingue validaciones planificadas de las no ejecutadas.
+Describe how to verify that units fit together: boundary contracts, shared files,
+tests, documentation, configuration, and applicable final validations. Distinguish
+planned validations from validations not run.
 
 ## Risks and Decision Points
 
-Lista riesgos con impacto y mitigación, bloqueos posibles, decisiones pendientes
-y puntos de control para detener, dividir de nuevo o cambiar el orden. No
-resuelvas por suposición una decisión que amplíe el alcance.
+List risks with impact and mitigation, possible blockers, pending decisions, and
+checkpoints for stopping, splitting again, or changing order. Do not resolve by
+assumption a decision that expands scope.
 
 ## Summary for Orchestrator
 
-Resume la estrategia, el número recomendado de unidades, los grupos paralelos o
-secuenciales, las validaciones clave, el alcance excluido y la siguiente acción.
+Summarize the strategy, recommended number of units, parallel or sequential
+groups, key validations, excluded scope, and next action.
 
-Aunque el encabezado conserve este nombre por compatibilidad con el formato
-histórico, el resumen está dirigido al usuario o al agente principal; no implica
-que exista un orquestador, una sesión hija ni una continuación automática.
+Although this heading retains its name for compatibility with the historical
+format, the summary is addressed to the user or main agent; it does not imply
+that an orchestrator, child session, or automatic continuation exists.
