@@ -1,0 +1,46 @@
+{
+  "skill_name": "ac-dotnet-clean-architecture",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Propón la estructura de una solución .NET nueva siguiendo estrictamente Clean Architecture. Quiero ver los proyectos, su responsabilidad y qué referencias de proyecto están permitidas; no escribas código.",
+      "expected_output": "Una estructura conceptual con Domain, Application, Infrastructure y un punto de entrada, más referencias permitidas y prohibidas. La respuesta está en español y se mantiene en el nivel de proyectos.",
+      "files": [],
+      "expectations": [
+        "Incluye los cuatro roles de proyecto y resume la responsabilidad de cada uno.",
+        "Indica Application -> Domain e Infrastructure -> Application, y permite Infrastructure -> Domain solo si usa directamente tipos Domain.",
+        "Permite que Api/Host referencie Infrastructure únicamente desde el composition root y prohíbe que Domain o Application dependan de capas externas.",
+        "No presenta los proyectos propuestos como elementos ya existentes en el repositorio."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Evalúa esta solución existente exclusivamente desde Clean Architecture: inspecciona los proyectos y sus referencias explícitas, señala dependencias en dirección incorrecta y propone el mapa objetivo de proyectos.",
+      "expected_output": "Un análisis en español que identifica la referencia incorrecta de Application a Infrastructure, conserva la referencia de Api a Infrastructure solo como composición del punto de entrada y separa el estado observado de la estructura objetivo.",
+      "files": [
+        "evals/files/existing/Acme.sln",
+        "evals/files/existing/src/Acme.Domain/Acme.Domain.csproj",
+        "evals/files/existing/src/Acme.Application/Acme.Application.csproj",
+        "evals/files/existing/src/Acme.Infrastructure/Acme.Infrastructure.csproj",
+        "evals/files/existing/src/Acme.Api/Acme.Api.csproj"
+      ],
+      "expectations": [
+        "Enumera los cuatro proyectos presentes en Acme.sln y comprueba sus ProjectReference explícitos.",
+        "Identifica Acme.Application -> Acme.Infrastructure como una dependencia saliente no permitida.",
+        "No clasifica Acme.Api -> Acme.Infrastructure como dependencia funcional permitida; la limita al composition root.",
+        "Distingue las referencias observadas del grafo objetivo recomendado."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Para una aplicación .NET con entrada HTTP, dame solo un árbol de solución con cada proyecto, su responsabilidad y sus referencias permitidas. No incluyas código ni detalles internos.",
+      "expected_output": "Un árbol conciso en español con los proyectos de Clean Architecture, responsabilidades y grafo de referencias, sin contenido fuera de ese alcance.",
+      "files": [],
+      "expectations": [
+        "La respuesta contiene únicamente el mapa de proyectos y relaciones necesarias para entenderlo.",
+        "El punto de entrada referencia Application y puede referenciar Infrastructure solo para composición.",
+        "No agrega capas o proyectos ajenos a las cuatro responsabilidades canónicas."
+      ]
+    }
+  ]
+}

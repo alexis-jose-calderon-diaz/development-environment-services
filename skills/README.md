@@ -16,6 +16,7 @@ carpeta es únicamente el catálogo y no se instala como una skill.
 | `ac-change-impact-analysis` | Analizar impacto, superficie, consumidores, complejidad, riesgos e incertidumbres antes de implementar | `ac-change-impact-analysis/SKILL.md`; read-only por contrato, sin aislamiento de permisos del runtime |
 | `ac-change-planning` | Preparar planes técnicos verificables con unidades, dependencias, validaciones y puntos de decisión | `ac-change-planning/SKILL.md`; no implementa ni requiere OpenSpec u orquestación previa |
 | `ac-change-review` | Revisar diffs o implementaciones contra objetivos, alcance, restricciones y criterios | `ac-change-review/SKILL.md`; read-only por contrato y basado en evidencia |
+| `ac-dotnet-clean-architecture` | Recomendar o evaluar la estructura de proyectos .NET según Clean Architecture y sus referencias permitidas | `ac-dotnet-clean-architecture/SKILL.md`; limitada a proyectos, responsabilidades y dependencias de la solución |
 | `ac-integration-boundary-audit` | Auditar fronteras entre implementación, contratos, consumidores, persistencia, generados y tests | `ac-integration-boundary-audit/SKILL.md`; read-only por contrato y no aplica correcciones |
 | `ac-release-tag-proposal` | Analizar commits y proponer una versión SemVer y un tag anotado sin crearlo ni publicarlo | `ac-release-tag-proposal/SKILL.md`; read-only por contrato y sin modificar refs |
 | `ac-pull-request` | Revisar commits y preparar o crear una Pull Request después de confirmación explícita | `ac-pull-request/SKILL.md`; requiere GitHub CLI para publicar y no crea commits |
@@ -37,6 +38,7 @@ npx skills add https://github.com/alexis-jose-calderon-diaz/development-environm
   --skill ac-change-impact-analysis \
   --skill ac-change-planning \
   --skill ac-change-review \
+  --skill ac-dotnet-clean-architecture \
   --skill ac-integration-boundary-audit \
   --skill ac-release-tag-proposal \
   --skill ac-pull-request \
