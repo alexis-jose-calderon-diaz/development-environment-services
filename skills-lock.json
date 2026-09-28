@@ -29,13 +29,13 @@
       "source": "Fission-AI/OpenSpec",
       "sourceType": "github",
       "skillPath": "skills/openspec-archive-change/SKILL.md",
-      "computedHash": "882260b0e157ffa22908a6c865757e02e15e7b0a6c1e851eaf8ad044e5835b54"
+      "computedHash": "8a517634f0802a3379df43b5a12efdc4b2ce9fca2c2526ea9bd148aacb9e0077"
     },
     "openspec-explore": {
       "source": "Fission-AI/OpenSpec",
       "sourceType": "github",
       "skillPath": "skills/openspec-explore/SKILL.md",
-      "computedHash": "dacb45eafccfd4cf527ad267db534320e997294b4c37d3172d0b03c680b680a1"
+      "computedHash": "3a03147f234952d7f45260ffd8173464107d94be52f49ccce92c6f8b25925ce6"
     },
     "openspec-propose": {
       "source": "Fission-AI/OpenSpec",
@@ -53,13 +53,13 @@
       "source": "Fission-AI/OpenSpec",
       "sourceType": "github",
       "skillPath": "skills/openspec-update-change/SKILL.md",
-      "computedHash": "ccc517379f6f0fbff6c8bce131689c215331051ae6d078a721f63c97ade6bd3a"
+      "computedHash": "f5b8ec0a53965e9a0f5b52da00835245a52e84cc6b08ca2d44b1d7da668f033b"
     },
     "openspec-verify-change": {
       "source": "Fission-AI/OpenSpec",
       "sourceType": "github",
       "skillPath": "skills/openspec-verify-change/SKILL.md",
-      "computedHash": "00cb8d751ab2a7dbd537a62a6f609da79ea2a825a5e2c235ea74dbb2ac210021"
+      "computedHash": "993a6b7dc13cea98068c983d9317dcaedc42aeeab6917d0971eac3e834d6adb5"
     },
     "skill-creator": {
       "source": "anthropics/skills",
