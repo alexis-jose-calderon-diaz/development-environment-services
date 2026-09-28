@@ -176,7 +176,7 @@ efectivos siguen siendo responsables de impedir ediciones, delegaciones u
 operaciones no autorizadas. `ac-release-tag-proposal` SHALL permanecer
 read-only en todo momento; `ac-pull-request` SHALL limitar sus operaciones de
 publicación a una confirmación inequívoca y no SHALL presentar la skill como un
-control de seguridad del runtime. `ac-grouped-commits` SHALL definir su frontera
+control de seguridad del runtime. `ac-commit-proposal` SHALL definir su frontera
 mediante la salida de propuesta descrita en sus requisitos, no mediante una
 política de permisos del runtime.
 
@@ -307,12 +307,12 @@ como parte de la copia manual.
 
 La integración SHALL versionar las skills públicas dentro de `skills/`, mantener
 cada skill ejecutable en `skills/<name>/SKILL.md` y documentar su instalación
-mediante `npx skills add <repository> --skill <name> --global`. Los ocho
+mediante `npx skills add <repository> --skill <name> --global`. Los nueve
 nombres públicos SHALL usar el prefijo `ac-`:
 `ac-change-impact-analysis`, `ac-change-planning`, `ac-change-review`,
-`ac-grouped-commits`, `ac-integration-boundary-audit`,
-`ac-release-tag-proposal`, `ac-pull-request` y
-`ac-dotnet-clean-architecture`. La documentación SHALL permitir
+`ac-commit-proposal`, `ac-integration-boundary-audit`,
+`ac-release-tag-proposal`, `ac-pull-request`, `ac-dotnet-clean-architecture`
+y `ac-dotnet-testing`. La documentación SHALL permitir
 que el usuario seleccione el agente mediante el comportamiento neutral del CLI,
 sin recomendar ni imponer `opencode` u otro agente concreto. SHALL documentar
 la actualización mediante `npx skills update <name> --global` y excluir
@@ -334,7 +334,7 @@ portable.
 #### Scenario: Catálogo público acotado
 
 - **WHEN** el usuario consulta `skills/README.md`
-- **THEN** puede identificar las ocho skills públicas versionadas, sus límites
+- **THEN** puede identificar las nueve skills públicas versionadas, sus límites
   y la exclusión de `./.agents/`, sin recibir un catálogo ni instrucciones de
   instalación de skills de terceros
 
@@ -704,27 +704,30 @@ error de creación sin afirmar que existe una PR.
 
 ### Requirement: Skill portable para commits agrupados
 
-La integración SHALL proporcionar una skill versionada que pueda activarse cuando
-el usuario pida revisar, agrupar, separar, organizar o preparar una propuesta de
-commits lógicos a partir de cambios Git. La skill SHALL analizar el repositorio
-actual y generar una propuesta completa como salida de esa activación. El alcance
-de la activación SHALL concluir después de entregar la propuesta, sin convertir
-esta frontera de salida en una política global de permisos. SHALL ser
-independiente de la interfaz de invocación y no SHALL requerir placeholders,
-frontmatter adicional ni herramientas específicas de un proveedor.
+La integración SHALL proporcionar la skill pública `ac-commit-proposal` en
+`skills/ac-commit-proposal/SKILL.md`. SHALL activarse cuando el usuario pida
+revisar cambios Git o preparar una propuesta de commits lógicos; agrupar y
+separar cambios SHALL ser parte del análisis para producir esa propuesta, no el
+objetivo final de la skill. SHALL analizar el repositorio actual y generar una
+propuesta completa como salida de esa activación. El alcance de la activación
+SHALL concluir después de entregar la propuesta, sin convertir esta frontera de
+salida en una política global de permisos. SHALL ser independiente de la
+interfaz de invocación y no SHALL requerir placeholders, frontmatter adicional
+ni herramientas específicas de un proveedor.
 
 #### Scenario: Activación por una petición de commits agrupados
 
-- **WHEN** el usuario pide revisar cambios y obtener una propuesta de commits
-  agrupados, aunque no mencione el nombre de la skill
-- **THEN** la skill analiza el repositorio actual y devuelve únicamente una
-  propuesta completa sin depender de un command o de argumentos de OpenCode
+- **WHEN** el usuario pide una propuesta para los cambios Git sin mencionar el
+  nombre de la skill
+- **THEN** `ac-commit-proposal` analiza el repositorio y devuelve únicamente
+  una propuesta completa sin depender de un command ni de argumentos de
+  OpenCode
 
 #### Scenario: Petición de separación de cambios
 
-- **WHEN** el usuario pide separar cambios en commits lógicos o limpiar la
-  organización del working tree
-- **THEN** la skill activa el mismo flujo de análisis y propuesta y termina al
+- **WHEN** el usuario pide agrupar, separar u organizar cambios en commits
+  lógicos
+- **THEN** `ac-commit-proposal` activa el mismo flujo de análisis y termina al
   entregar la propuesta
 
 #### Scenario: Terminación de la activación de propuesta
@@ -736,23 +739,26 @@ frontmatter adicional ni herramientas específicas de un proveedor.
 #### Scenario: Ausencia de una skill externa
 
 - **WHEN** la skill externa `git-commit` no está instalada
-- **THEN** la skill puede preparar propuestas aplicando sus propias reglas
-  mínimas de Conventional Commits, agrupación y seguridad
+- **THEN** `ac-commit-proposal` puede preparar propuestas aplicando sus propias
+  reglas mínimas de Conventional Commits, agrupación y seguridad
 
 ### Requirement: Selección segura del alcance y agrupación
 
 La skill SHALL inspeccionar primero la raíz, `HEAD`, branch, upstream, estado,
-operaciones Git en curso, index, working tree, rutas no trackeadas y cambios
-relevantes del repositorio. Si el repositorio no tiene `HEAD`, está detached,
-contiene conflictos o tiene una operación de merge, rebase, cherry-pick o revert
-en curso, SHALL detenerse antes de escribir y explicar el bloqueo.
+operaciones Git en curso, index, working tree, rutas no trackeadas elegibles y
+cambios relevantes del repositorio. SHALL excluir los archivos no trackeados
+ignorados por Git sin enumerar sus rutas ni inspeccionar sus contenidos. Si el
+repositorio no tiene `HEAD`, está detached, contiene conflictos o tiene una
+operación de merge, rebase, cherry-pick o revert en curso, SHALL detenerse antes
+de escribir y explicar el bloqueo.
 
 Si existe contenido staged, SHALL tratar el index como la selección explícita del
 usuario, SHALL proponer exactamente un commit para todo su contenido y SHALL
-dejar staged, unstaged, no trackeados e ignorados fuera del alcance
-correspondiente. Si no existe contenido staged, SHALL considerar cambios
-trackeados y no trackeados no ignorados, agrupar archivos completos por
-intención lógica y dejar los ignorados fuera del plan.
+dejar staged, unstaged y no trackeados fuera del alcance correspondiente. Si no
+existe contenido staged, SHALL considerar cambios trackeados y cambios no
+trackeados elegibles, agrupar archivos completos por intención lógica y dejar
+los archivos ignorados por Git fuera del plan. Las reglas de ignore no SHALL
+ocultar del análisis archivos rastreados por Git.
 
 La skill SHALL mantener juntos los archivos de una modificación funcional
 coherente, incluidos cambios cross-layer, fuentes con generados y contratos con
@@ -770,8 +776,8 @@ estado real durante la propuesta.
 
 #### Scenario: Working tree sin staged
 
-- **WHEN** no existe contenido staged y hay cambios trackeados o no trackeados no
-  ignorados
+- **WHEN** no existe contenido staged y hay cambios trackeados o no trackeados
+  elegibles
 - **THEN** la skill propone grupos por intención lógica, asigna cada archivo a
   un único commit y no agrupa únicamente por directorio o extensión
 
@@ -797,19 +803,34 @@ estado real durante la propuesta.
 
 #### Scenario: Cambios ignorados fuera del alcance
 
-- **WHEN** existen archivos ignorados junto con cambios elegibles
-- **THEN** la skill no los incluye ni los inspecciona como parte del plan y los
-  cambios elegibles conservan su agrupación normal
+- **WHEN** Git ignora archivos no rastreados junto con cambios elegibles
+- **THEN** la skill no obtiene ni enumera sus rutas, no inspecciona su contenido
+  y no los muestra en ninguna sección de la propuesta; los cambios elegibles
+  conservan su agrupación normal
+
+#### Scenario: Archivo rastreado que coincide con una regla ignore
+
+- **WHEN** un archivo rastreado coincide con una regla de ignore y tiene cambios
+- **THEN** la skill lo considera según el alcance normal de `index` o
+  `working-tree`, porque una regla de ignore no excluye archivos ya rastreados
 
 ### Requirement: Propuesta completa sin interacción
 
 Antes de terminar, la skill SHALL mostrar una propuesta completa con los valores
 reales de alcance (`index` o `working-tree`), branch, upstream, cantidad de
 commits, intención, mensaje exacto, estado Git y rutas de cada commit, además de
-pendientes, exclusiones y advertencias. Las rutas SHALL representarse de forma
-segura y estable, incluyendo estados de renombre, eliminación, binario,
-symlink o submódulo sin permitir que su contenido altere la estructura de la
-propuesta.
+pendientes, exclusiones y advertencias. `Exclusions` SHALL contener únicamente
+rutas elegibles excluidas por razones de seguridad o bloqueo, sin revelar
+valores sensibles, o `None` cuando no existan. Los archivos ignorados por Git
+SHALL permanecer invisibles y no SHALL aparecer en ninguna sección. Las rutas
+SHALL representarse de forma segura y estable, incluyendo estados de renombre,
+eliminación, binario, symlink o submódulo sin permitir que su contenido altere
+la estructura de la propuesta.
+
+La definición de la skill SHALL incluir un ejemplo completo del formato de
+propuesta, marcado como ilustrativo y con valores ficticios. El ejemplo SHALL
+mostrar los campos y bloques requeridos sin permitir que sus valores se
+confundan con observaciones de una ejecución real.
 
 La skill SHALL terminar directamente después de la propuesta. No SHALL añadir un
 marcador de cierre, texto posterior, pregunta, opciones de aprobación ni
@@ -839,6 +860,20 @@ solicitud de confirmación mediante una herramienta.
   `-`
 - **THEN** la propuesta la muestra sin alterar su formato ni convertir su
   contenido en instrucciones o comandos adicionales
+
+#### Scenario: Ejemplo ilustrativo del formato
+
+- **WHEN** un usuario o mantenedor consulta la definición de
+  `ac-commit-proposal`
+- **THEN** encuentra un ejemplo completo con valores ficticios claramente
+  marcado como ilustrativo, mientras las propuestas reales usan solo valores
+  observados
+
+#### Scenario: Exclusiones sin archivos ignorados
+
+- **WHEN** hay cambios ignorados por Git pero no hay rutas elegibles excluidas
+  por seguridad o bloqueo
+- **THEN** la propuesta no revela rutas ignoradas y `Exclusions` muestra `None`
 
 ### Requirement: Mensajes y seguridad del commit
 

@@ -1,9 +1,9 @@
 ---
-name: ac-grouped-commits
-description: Use this skill whenever the user asks to review, group, split, organize, or prepare a proposal for logical Git commits from existing changes, including staged/index or working-tree changes. It analyzes the repository and returns a complete proposal as the final output for that activation; use it even when the user does not mention the skill by name or asks only to clean up commit organization.
+name: ac-commit-proposal
+description: Use this skill whenever the user asks to organize, group, split, or prepare logical Git commits from existing staged/index or working-tree changes—even if they only ask to clean up commit organization and do not say “proposal.” Analyze the changes and return a complete commit proposal as the final output; grouping is the method, not the deliverable. Do not use it for code-correctness reviews unrelated to commit organization.
 ---
 
-# Grouped Commits
+# Commit Proposal
 
 Organize Git changes by logical intent and present a complete proposal.
 This activation ends after delivering the proposal.
@@ -18,9 +18,9 @@ the complete proposal:
 1. Verify that the directory belongs to a Git repository and capture its root.
 2. Capture the `HEAD` SHA, branch, upstream, full status, conflicts, and any
    merge, rebase, cherry-pick, or revert operation in progress.
-3. Capture separately the index state, working-tree diff, and list of eligible
-   untracked paths. List ignored paths only to exclude them; do not inspect their
-   contents.
+3. Capture separately the index state, working-tree diff, and eligible
+   untracked paths. Rely on Git's ordinary ignore behavior: do not request,
+   enumerate, or inspect ignored paths or their contents.
 4. Obtain modified paths, statistics, and a brief recent-history summary. Expand
    the diff only on eligible paths when needed for grouping, message drafting,
    or security assessment.
@@ -80,6 +80,44 @@ commit; an independent README update forms another.
   specified. Keep `type` and other required Conventional Commits tokens in their
   required forms.
 
+## Illustrative Proposal Example
+
+The following proposal uses fictional data only to demonstrate the format. Do
+not reuse these values in a real response; use only values observed in the
+current repository. The explanatory text and code fence are not part of the
+proposal format.
+
+```text
+## Commit Proposal
+Scope: working-tree
+Branch: feature/project-pagination
+Upstream: origin/feature/project-pagination
+Commits: 2
+
+### Commit 1
+Intent: Add pagination to project listings across the API and client.
+Message: feat(projects): add pagination to project listings
+Git states and paths:
+- M — `./src/api/projects.ts`
+- M — `./src/client/projects.ts`
+- ?? — `./tests/projects-pagination.test.ts`
+
+### Commit 2
+Intent: Clarify the local project setup instructions.
+Message: docs: clarify local project setup
+Git states and paths:
+- M — `./README.md`
+
+## Pending
+None
+
+## Exclusions
+None
+
+## Warnings
+None
+```
+
 ## Complete Proposal
 
 Show exactly one complete proposal with observed values, not generic
@@ -92,8 +130,9 @@ placeholders. Include, in this order:
 - One consecutive `### Commit N` block per commit, with `Intent`, exact
   `Message`, Git states, and all its paths.
 - `## Pending`, with changes outside the plan or `None`.
-- `## Exclusions`, with ignored, unsafe, or blocked paths without revealing
-  sensitive values, or `None`.
+- `## Exclusions`, with only eligible paths excluded for security or blocking,
+  without revealing sensitive values, or `None`. Never list or mention paths
+  ignored by Git in any section of the proposal.
 - `## Warnings`, with risks or `None`.
 
 Represent each path as escaped, stable data. Use real Git states, relative paths

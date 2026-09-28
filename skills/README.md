@@ -12,7 +12,7 @@ carpeta es únicamente el catálogo y no se instala como una skill.
 
 | Skill | Uso | Fuente y límites |
 | --- | --- | --- |
-| `ac-grouped-commits` | Agrupar cambios Git por intención y mostrar una propuesta completa como salida de la activación | `ac-grouped-commits/SKILL.md`; define el formato y el análisis de la propuesta |
+| `ac-commit-proposal` | Preparar una propuesta completa de commits lógicos a partir de cambios Git | `ac-commit-proposal/SKILL.md`; define el formato y el análisis de la propuesta |
 | `ac-change-impact-analysis` | Analizar impacto, superficie, consumidores, complejidad, riesgos e incertidumbres antes de implementar | `ac-change-impact-analysis/SKILL.md`; read-only por contrato, sin aislamiento de permisos del runtime |
 | `ac-change-planning` | Preparar planes técnicos verificables con unidades, dependencias, validaciones y puntos de decisión | `ac-change-planning/SKILL.md`; no implementa ni requiere OpenSpec u orquestación previa |
 | `ac-change-review` | Revisar diffs o implementaciones contra objetivos, alcance, restricciones y criterios | `ac-change-review/SKILL.md`; read-only por contrato y basado en evidencia |
@@ -35,7 +35,7 @@ Para instalar las skills públicas versionadas:
 
 ```bash
 npx skills add https://github.com/alexis-jose-calderon-diaz/development-environment-services \
-  --skill ac-grouped-commits \
+  --skill ac-commit-proposal \
   --skill ac-change-impact-analysis \
   --skill ac-change-planning \
   --skill ac-change-review \
@@ -55,7 +55,7 @@ npx skills update <name> --global
 
 ## Precedencia y mantenimiento
 
-- `ac-grouped-commits` es la skill pública para organizar propuestas de commits y
+- `ac-commit-proposal` es la skill pública para preparar propuestas de commits y
   termina al entregar la propuesta completa.
 - Revisa el contenido de una skill antes de instalarla y compara los cambios
   antes de actualizar una instalación global existente.
