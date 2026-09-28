@@ -1,6 +1,24 @@
 {
   "version": 1,
   "skills": {
+    "create-skill": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/create-skill/SKILL.md",
+      "computedHash": "fabb173b2b1fe4fd45f8ceb5a0dc5f53dea2dc29ec368d90fc96bbc643d1547f"
+    },
+    "create-skill-test": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/create-skill-test/SKILL.md",
+      "computedHash": "dea356597cb149034f2716058805e13b7b21999473eb49c3b7b38d3c8b0b2fae"
+    },
+    "improve-skill-quality": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/improve-skill-quality/SKILL.md",
+      "computedHash": "719216dc19ef21fce8ad9b9aecee292cec710afade5036f262ce56054f1a0735"
+    },
     "openspec-apply-change": {
       "source": "Fission-AI/OpenSpec",
       "sourceType": "github",
