@@ -80,33 +80,44 @@ commit; an independent README update forms another.
   specified. Keep `type` and other required Conventional Commits tokens in their
   required forms.
 
-## Illustrative Proposal Example
+## Illustrative Proposal Examples
 
-The following proposal uses fictional data only to demonstrate the format. Do
-not reuse these values in a real response; use only values observed in the
-current repository. The explanatory text and code fence are not part of the
-proposal format.
+All values below are fictional and demonstrate formatting only. Never reuse
+them in a real proposal; use only values observed in the current repository.
+The `markdown` fences in this skill file only display the examples. A real
+proposal uses ordinary rendered Markdown and does not include an outer fence or
+an illustrative label.
 
-```text
+### Complete working-tree example
+
+````markdown
 ## Commit Proposal
-Scope: working-tree
-Branch: feature/project-pagination
-Upstream: origin/feature/project-pagination
+Scope: `working-tree`
+Branch: `feature/project-pagination`
+Upstream: `origin/feature/project-pagination`
 Commits: 2
 
 ### Commit 1
-Intent: Add pagination to project listings across the API and client.
-Message: feat(projects): add pagination to project listings
+Intent: Add cursor pagination across the project API and client.
+Message:
+~~~text
+feat(projects): add cursor pagination
+
+BREAKING CHANGE: replace the `page` parameter with `cursor`.
+~~~
 Git states and paths:
-- M — `./src/api/projects.ts`
-- M — `./src/client/projects.ts`
-- ?? — `./tests/projects-pagination.test.ts`
+- `M` — `"./src/api/projects.ts"`
+- `M` — `"./src/client/projects.ts"`
+- `??` — `"./tests/project-pagination.test.ts"`
 
 ### Commit 2
-Intent: Clarify the local project setup instructions.
-Message: docs: clarify local project setup
+Intent: Clarify local project setup instructions.
+Message:
+~~~text
+docs: clarify local project setup
+~~~
 Git states and paths:
-- M — `./README.md`
+- `M` — `"./README.md"`
 
 ## Pending
 None
@@ -116,29 +127,103 @@ None
 
 ## Warnings
 None
-```
+````
+
+### `index` variant with pending changes
+
+This fictional excerpt shows the one-commit `index` rule. A real proposal still
+includes every required section in the specified order.
+
+````markdown
+Scope: `index`
+Commits: 1
+
+### Commit 1
+Intent: Fix the selected API response.
+Message:
+~~~text
+fix(api): handle empty project results
+~~~
+Git states and paths:
+- `M` — `"./src/api/projects.ts"`
+
+## Pending
+- ` M` — `"./README.md"`
+- `??` — `"./notes.txt"`
+````
+
+### Special paths and rename variant
+
+This fictional excerpt demonstrates that a backtick and newline are escaped in
+the JSON path string, and that a rename remains one list item with both paths.
+
+````markdown
+Git states and paths:
+- `M` — `"./docs/a\u0060b\nnotes.md"`
+- `R100` — `"./src/old name.ts"` → `"./src/new name.ts"`
+````
 
 ## Complete Proposal
 
-Show exactly one complete proposal with observed values, not generic
-placeholders. Include, in this order:
+Return exactly one complete proposal with observed values, not placeholders, as
+ordinary Markdown. Do not wrap the entire proposal in a code block. Use these
+headings, labels, and ordering exactly:
 
-- `## Commit Proposal`.
-- `Scope`: exactly `index` or `working-tree`.
-- `Branch` and `Upstream`, using the observed value or `None`.
-- `Commits`, equal to the number of commit blocks.
-- One consecutive `### Commit N` block per commit, with `Intent`, exact
-  `Message`, Git states, and all its paths.
-- `## Pending`, with changes outside the plan or `None`.
-- `## Exclusions`, with only eligible paths excluded for security or blocking,
-  without revealing sensitive values, or `None`. Never list or mention paths
-  ignored by Git in any section of the proposal.
-- `## Warnings`, with risks or `None`.
+```text
+## Commit Proposal
+Scope: <`index`|`working-tree`>
+Branch: <`observed branch`|None>
+Upstream: <`observed upstream`|None>
+Commits: <decimal count>
 
-Represent each path as escaped, stable data. Use real Git states, relative paths
-starting with `./`, one entry for each rename, and a representation that does not
-allow spaces, backticks, newlines, or a `-` prefix to alter the structure or
-become commands.
+### Commit 1
+Intent: <intent>
+Message:
+~~~text
+<exact commit message>
+~~~
+Git states and paths:
+- `<Git state>` — `"<JSON-encoded path>"`
 
-End immediately after `## Warnings`. Do not add trailing text, questions,
-decision options, or instructions for executing commits.
+## Pending
+- <pending item>
+
+## Exclusions
+- <eligible excluded path and reason>
+
+## Warnings
+- <warning>
+```
+
+The `text` block above illustrates the syntax; actual proposals use the same
+structure as rendered Markdown, not an outer code block. Use consecutive commit
+headings from `### Commit 1` through `### Commit N`. Each commit block contains,
+in order, `Intent`, `Message`, and `Git states and paths`. The metadata values for
+`Scope`, `Branch`, and `Upstream` use inline code when observed; use the literal
+`None` without backticks when unavailable. `Commits` is the decimal number of
+commit blocks.
+
+Under `Message:`, put the exact full Conventional Commit message in a fenced
+`text` block, including its body and trailers. Use a tilde fence of at least
+three characters and make it longer than every consecutive tilde run in the
+message, so message content cannot close its fence. Do not split or rewrite the
+message to fit Markdown.
+
+For each path, preserve its actual Git state and represent its `./`-prefixed
+relative path as a JSON string inside an inline code span. Use JSON escapes for
+quotes, backslashes, and control characters; always encode a backtick as
+`\u0060` so it cannot terminate the Markdown code span. Represent each rename in
+one list item with its source and destination JSON strings separated by ` → `.
+Treat every path as data, including spaces, newlines, backticks, and a leading
+`-`; never let path contents change the Markdown structure or become commands.
+
+For each of `## Pending`, `## Exclusions`, and `## Warnings`, use Markdown list
+items when entries exist; otherwise write the literal `None` on its own line,
+without a bullet or backticks. `Pending` contains changes outside the plan.
+`Exclusions` contains only eligible paths excluded for security or blocking,
+without sensitive values. Never list, inspect, or mention Git-ignored paths in
+any section.
+
+End immediately after the contents of `## Warnings`. Do not add trailing text,
+questions, decision options, confirmation requests, or instructions for executing
+commits.
