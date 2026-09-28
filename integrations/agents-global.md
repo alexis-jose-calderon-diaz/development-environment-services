@@ -77,6 +77,12 @@ revisión del alcance y el plan. No integres antes de revisar el resultado.
 
 - Usa herramientas orientadas a búsqueda y lectura; para JSON o YAML prefiere
   salida estructurada.
+- No combines comandos de inspección del repositorio que no estén relacionados
+  en un script Python personalizado solo para reducir llamadas a herramientas.
+  Prefiere ejecutar varios comandos de shell directamente por transparencia y
+  para ajustarte a los permisos; usa directamente las herramientas CLI nativas.
+- No uses Python, Node.js, scripts de shell, heredocs ni otros lenguajes de
+  scripting solo para envolver comandos CLI.
 - Ejecuta solo validaciones relevantes y registra el comando, el resultado y la
   superficie cubierta.
 - Informa por separado los cambios realizados, las validaciones no ejecutadas,
