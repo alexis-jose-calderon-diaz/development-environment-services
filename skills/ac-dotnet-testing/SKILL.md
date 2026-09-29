@@ -150,10 +150,13 @@ example, this file contains the class
 `CreateOrder_WhenRequestIsValid_PersistsTheSubmittedOrderAsyncTests` and method
 `CreateOrder_WhenRequestIsValid_PersistsTheSubmittedOrderAsync`.
 The `TestApplication` adapter below represents the repository-specific way to
-start a host with isolated test data; this example creates and disposes it in
-the case. A fixture may share costly infrastructure such as a host or database
-container, provided each test owns or isolates its mutable data and can run
-without another test's execution or cleanup.
+start a host with an isolated database; this example creates and disposes that
+infrastructure in the case. Per-test physical isolation is a valid choice when
+its startup cost is acceptable or it makes the suite easier to reason about.
+When repeatedly starting a host, database container, or database materially
+increases suite runtime, a fixture may keep that infrastructure alive across
+cases. Reusing infrastructure does not mean reusing mutable test state: every
+case still needs its own logical baseline and data.
 
 ```csharp
 namespace MyApp.IntegrationTests.Features.Orders.CreateOrder;
@@ -188,17 +191,55 @@ The example is illustrative, not a claim that these types or endpoints exist in
 the user's repository. Use real components for the boundaries under test; isolate
 or replace unrelated external systems when needed.
 
+For shared infrastructure, reset shared state automatically before every case,
+such as from the test's per-case initialization hook. The reset must be
+idempotent: remove transient data from earlier cases, preserve required seed or
+reference data and migration history, and leave the same usable baseline when
+run more than once. Include mutable host-level state in that boundary when it
+can affect a case. For example, a shared fixture can expose
+`ResetTransientStateAsync`, which the per-case lifecycle hook awaits before
+Arrange:
+
+```csharp
+// Illustrative pseudocode: adapt the hook and return type to the xUnit version.
+public Task InitializeAsync()
+    => _fixture.ResetTransientStateAsync();
+```
+
+Add a focused test for the reset itself. It should create transient data and
+required seed data, invoke the reset, verify that transient data is gone while
+the seeds and migration history remain, then invoke the reset again and verify
+that the usable baseline is unchanged. Do not rely on another integration case
+to verify cleanup.
+
+If a reset or another shared mutable resource can race with case execution,
+serialize the smallest applicable test collection or suite. Keep tests parallel
+when they use independent databases, schemas, transactions, or data partitions
+that actually prevent interference. A shared host may also retain mutable
+in-memory state; reset or isolate that state too, or serialize the affected
+cases when it cannot be partitioned safely.
+
 ## Independence, data, and cleanup
 
 - Each test creates the data it needs and owns the lifetime of resources it
   starts. Dispose resources in the test, using `using`, `await using`, or
   `try/finally` as appropriate.
 - Do not use shared mutable test state or test-order assumptions. xUnit
-  fixtures (`IClassFixture<T>` / `ICollectionFixture<T>`) may share costly
-  infrastructure, but must not pass mutable test data between cases or make a
+  fixtures (`IClassFixture<T>` / `ICollectionFixture<T>`) may share a costly
+  host, database container, or database when startup cost justifies reuse, but
+  infrastructure reuse must not pass mutable test data between cases or make a
   test depend on another test's execution or cleanup.
-- For integration tests, use an isolated database, transaction, schema, or
-  uniquely identified records appropriate to the application, and clean up only
+- For shared integration-test state, reset automatically before every case.
+  Make the reset idempotent, remove transient data, preserve required seeds and
+  migration history, and test those guarantees. Reset relevant mutable host
+  state as well as database state.
+- Serialize only the tests whose shared mutable state cannot be safely
+  partitioned during concurrent execution. Otherwise, use independent
+  databases, transactions, schemas, or uniquely identified records to preserve
+  parallel execution.
+- Per-test physical isolation remains a valid alternative: create and dispose
+  an isolated host, database container, database, transaction, or schema when
+  its cost is acceptable or it better fits the application. Clean up only
   resources owned by that test.
 - Avoid duplicating large setup blocks by using a small helper local to the
   case file. A helper must not conceal shared state or couple test lifecycles.
