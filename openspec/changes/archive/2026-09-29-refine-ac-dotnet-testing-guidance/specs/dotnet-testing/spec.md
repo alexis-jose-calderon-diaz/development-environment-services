@@ -1,21 +1,17 @@
-# dotnet-testing Specification
+# Spec Delta
 
-## Purpose
-
-Provides a complete, framework-agnostic guide for creating xUnit test projects, covering structure, organization, and coding patterns for both unit and integration tests.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Separate test projects
 
 The skill SHALL present separate unit and integration test projects named `<Project>.UnitTests` and `<Project>.IntegrationTests` as a recommended default for new solutions. When working in an existing solution, it SHALL preserve established project boundaries and names unless the user requests a reorganization or a concrete constraint requires a change.
 
 #### Scenario: Unit test project naming
-- **WHEN** a new .NET solution has a project named `MyApp`
+- **WHEN** creating test projects for a new .NET solution with a production project named `MyApp`
 - **THEN** the skill SHALL recommend `MyApp.UnitTests` as the default unit-test project name
 
 #### Scenario: Integration test project naming
-- **WHEN** a new .NET solution has a project named `MyApp`
+- **WHEN** creating test projects for a new .NET solution with a production project named `MyApp`
 - **THEN** the skill SHALL recommend `MyApp.IntegrationTests` as the default integration-test project name
 
 #### Scenario: Adding tests to an existing solution
@@ -28,14 +24,14 @@ The skill SHALL present one test case per file, with descriptive file and class 
 
 #### Scenario: Separate cases for one class
 - **WHEN** creating tests in a new solution or a repository that uses one case per file
-- **THEN** each case SHALL have its own file and test class, with one test method in each file
+- **THEN** each distinct test case SHALL have its own file and test class, and the names SHALL identify the subject and scenario
 
 #### Scenario: Following an established grouping convention
 - **WHEN** adding tests to a repository that groups multiple related test methods in one file
 - **THEN** the skill SHALL preserve that convention unless the user requests a different organization
 
 #### Scenario: File naming identifies the scenario
-- **WHEN** creating a test case for `PaymentProcessor` that rejects an expired card
+- **WHEN** writing a test case for `PaymentProcessor` that rejects an expired card
 - **THEN** the skill SHALL recommend a descriptive subject-and-scenario name such as `PaymentProcessor_RejectsExpiredCardTests.cs`
 
 ### Requirement: Self-contained tests
@@ -46,6 +42,10 @@ The skill SHALL require that each test can run independently, owns or isolates i
 - **WHEN** running any single test in isolation
 - **THEN** it SHALL pass without requiring another test to run first or clean up after it
 
+#### Scenario: Isolated test data
+- **WHEN** multiple tests need similar mutable test data
+- **THEN** each test SHALL create or receive an isolated copy of that data
+
 #### Scenario: No shared state
 - **WHEN** multiple tests need similar test data
 - **THEN** each test SHALL create its own copy of mutable data and SHALL NOT depend on shared mutable state
@@ -53,22 +53,6 @@ The skill SHALL require that each test can run independently, owns or isolates i
 #### Scenario: Shared infrastructure fixture
 - **WHEN** integration tests use a fixture to share costly infrastructure such as a host or database container
 - **THEN** the fixture MAY share that infrastructure while each test retains isolated data and can run independently
-
-### Requirement: Vertical slice organization for integration tests
-
-The skill SHALL recommend organizing integration tests by feature or use case rather than only by technical layer. For new solutions it MAY show a feature-oriented folder structure as a default. In an existing solution it SHALL preserve established organization unless the user requests a reorganization, and it SHALL describe integration coverage in terms of the relevant boundaries rather than requiring every test to cross every application layer.
-
-#### Scenario: Feature-based folder structure
-- **WHEN** creating integration-test folders for a new e-commerce solution
-- **THEN** the skill SHALL recommend feature folders such as `Orders/`, `Payments/`, and `Inventory/` over folders organized only as `Controllers/`, `Services/`, and `Repositories/`
-
-#### Scenario: Existing integration-test organization
-- **WHEN** adding integration tests to a solution with an established folder organization
-- **THEN** the skill SHALL follow that organization and SHALL NOT require moving existing tests solely to adopt a feature-oriented layout
-
-#### Scenario: Cross-layer test
-- **WHEN** writing an integration test for "Create Order"
-- **THEN** the test SHALL exercise the relevant production boundaries for the behavior under test without requiring unrelated layers or external systems
 
 ### Requirement: Extend existing cases for the same scenario
 
@@ -82,17 +66,21 @@ The skill SHALL establish that when a new property belongs to the same result or
 - **WHEN** a new method or behavior on `OrderService` requires a separate scenario
 - **THEN** it SHALL be covered by one new test method; create a separate file when following one-case-per-file, or keep it in the existing file when that is the repository's established grouping
 
-### Requirement: Framework-agnostic guidance
+### Requirement: Vertical slice organization for integration tests
 
-The skill SHALL provide guidance that is not tied to any specific assertion or mocking library, mentioning options without recommending a specific one.
+The skill SHALL recommend organizing integration tests by feature or use case rather than only by technical layer. For new solutions it MAY show a feature-oriented folder structure as a default. In an existing solution it SHALL preserve established organization unless the user requests a reorganization, and it SHALL describe integration coverage in terms of the relevant boundaries rather than requiring every test to cross every application layer.
 
-#### Scenario: Assertion examples
-- **WHEN** showing how to write assertions
-- **THEN** the skill SHALL mention multiple options (e.g., xUnit.Assert, FluentAssertions, Shouldly) without requiring one
+#### Scenario: Feature-based folder structure
+- **WHEN** creating integration tests for an e-commerce application in a new solution
+- **THEN** the skill SHALL recommend feature folders such as `Orders/`, `Payments/`, and `Inventory/` over folders organized only as `Controllers/`, `Services/`, and `Repositories/`
 
-#### Scenario: Mocking examples
-- **WHEN** showing how to create mocks
-- **THEN** the skill SHALL mention multiple options (e.g., Moq, NSubstitute, FakeItEasy) without requiring one
+#### Scenario: Existing integration-test organization
+- **WHEN** adding integration tests to a solution with an established folder organization
+- **THEN** the skill SHALL follow that organization and SHALL NOT require moving existing tests solely to adopt a feature-oriented layout
+
+#### Scenario: Cross-layer test
+- **WHEN** writing an integration test for "Create Order"
+- **THEN** the test SHALL exercise the relevant production boundaries for the behavior under test without requiring unrelated layers or external systems
 
 ### Requirement: Code patterns and examples
 
