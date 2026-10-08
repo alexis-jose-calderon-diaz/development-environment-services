@@ -5,7 +5,7 @@
       "source": "dotnet/skills",
       "sourceType": "github",
       "skillPath": ".agents/skills/create-skill/SKILL.md",
-      "computedHash": "fabb173b2b1fe4fd45f8ceb5a0dc5f53dea2dc29ec368d90fc96bbc643d1547f"
+      "computedHash": "16541f7575ee5fc02b4aed2456b6aa9dca4bbdcd4abd0efcb2803e00bbd04914"
     },
     "create-skill-test": {
       "source": "dotnet/skills",
