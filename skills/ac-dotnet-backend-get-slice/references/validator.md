@@ -2,51 +2,85 @@
 
 ## Responsabilidad
 
-Contiene reglas de entrada para el `Request` de su propia slice, normalmente con FluentValidation cuando el proyecto lo usa. Mantén cada validator junto a su operación; esta guía única explica las variantes sin crear una referencia por acción.
+Contiene reglas con FluentValidation para el `Request` de su propia slice. Mantén cada validator junto a su operación; esta guía única explica las variantes sin crear una referencia por acción.
 
 ## Cuándo incluirlo
 
-Inclúyelo cuando existan reglas de entrada relevantes o cuando el proyecto exija registro uniforme:
+Inclúyelo cuando existan reglas complejas de contrato, enums o validaciones de comportamiento, y cuando el proyecto exija registro uniforme:
 
-- **Create**: requeridos, longitudes, rangos y formatos del payload de creación.
-- **Get**: límites de búsqueda/paginación y reglas entre filtros (por ejemplo, restricciones de una opción `ALL`).
-- **Update**: rangos y valores permitidos para campos editables; no supongas que son las mismas reglas de Create.
-- **Delete**: normalmente no requiere validator si solo recibe un ID; not-found y reglas de dependencia son comportamiento del caso de uso/dominio, no validación de un body inexistente.
+- **Create**: validaciones de comportamiento propias de crear, reglas entre campos y enums del payload.
+- **Get**: pertenencia de enums, reglas entre filtros y condiciones de paginación que no sean una regla simple de una propiedad.
+- **Update**: comportamiento de la actualización, reglas condicionales entre campos y enums; no supongas que son iguales a Create.
+- **Delete**: no requiere validator si solo recibe un ID. Si el caso de uso tiene un payload o una precondición de comportamiento expresable para esa entrada, puede tener `Delete/Validator.cs`; not-found y las invariantes de dependencia deben seguir protegidas autoritativamente por el caso de uso/dominio.
 
 No crees validators vacíos salvo que la arquitectura los requiera expresamente.
 
-## Ejemplo
+## Qué mecanismo usar
+
+| Tipo de regla | Ubicación recomendada | Ejemplos |
+|---|---|---|
+| Contrato simple, local a un campo | DataAnnotations en `Request.cs` | `[Required]`, `[StringLength]`, `[Range]`, `[RegularExpression]` |
+| Contrato complejo o condicionado | FluentValidation en `Validator.cs` | Comparación entre propiedades, campo obligatorio según otro campo, reglas condicionales |
+| Validez de enum recibido | FluentValidation en `Validator.cs` | `RuleFor(x => x.Status).IsInEnum()` |
+| Comportamiento/precondición del caso de uso | FluentValidation en `Validator.cs` | Nombre no duplicado, transición permitida, combinación de entrada válida para la operación |
+
+No implementes la misma restricción simple en DataAnnotations y FluentValidation a la vez. Si la misma invariantes debe proteger también invocaciones internas, asegúrate de que esa ruta ejecute el mecanismo correcto.
+
+## Ejemplos
 
 ```csharp
-// Ejemplo de Get/Validator.cs para la paginación.
+// Get/Validator.cs: reglas de contrato complejas, condiciones y enum.
 internal sealed class Validator : AbstractValidator<Request>
 {
     public Validator()
     {
-        RuleFor(request => request.Page)
-            .GreaterThanOrEqualTo(1)
-            .WithMessage("El número de página debe ser mayor o igual a 1.");
+        RuleFor(request => request.Status)
+            .IsInEnum()
+            .WithMessage("El estado especificado no es válido.");
 
-        RuleFor(request => request.PageSize)
-            .InclusiveBetween(1, 100)
-            .WithMessage("El tamaño de página debe estar entre 1 y 100.");
+        RuleFor(request => request.Confirmation)
+            .Equal(request => request.Name)
+            .WithMessage("La confirmación debe coincidir con el nombre.");
 
-        RuleFor(request => request.Search)
-            .MaximumLength(100)
-            .WithMessage("El término de búsqueda no puede exceder los 100 caracteres.");
+        RuleFor(request => request.ApprovalCode)
+            .NotEmpty()
+            .When(request => request.RequiresApproval)
+            .WithMessage("El código de aprobación es obligatorio para esta operación.");
     }
 }
-
-// En Create/Validator.cs o Update/Validator.cs, las reglas apuntan
-// al Request propio de esa slice; no reutilices este validator por conveniencia.
 ```
+
+Las propiedades `Confirmation`, `ApprovalCode` y `RequiresApproval` solo ilustran relaciones entre campos; usa las propiedades reales del Request de la operación. Las restricciones de una sola propiedad —por ejemplo, rango de `Page` o longitud máxima de `Name`— permanecen en DataAnnotations.
+
+### Validación de comportamiento que requiere consultar estado
+
+Cuando una precondición de la operación depende de datos persistidos o de un servicio, FluentValidation puede usar una regla asíncrona y un puerto de Application. No inyectes Infrastructure directamente en el validator.
+
+```csharp
+internal sealed class Validator : AbstractValidator<Request>
+{
+    public Validator(IProductNameAvailability nameAvailability)
+    {
+        RuleFor(request => request.Name)
+            .MustAsync(async (name, cancellationToken) =>
+            {
+                bool exists = await nameAvailability.ExistsAsync(name, cancellationToken);
+                return !exists;
+            })
+            .WithMessage("Ya existe un producto con ese nombre.");
+    }
+}
+```
+
+Usa estas reglas para rechazar pronto una petición con feedback de validación. Una consulta previa no garantiza unicidad frente a concurrencia ni reemplaza una invariante: protege la operación también en dominio/persistencia (por ejemplo, con una restricción única) y traduce el conflicto según el patrón del proyecto. Para reglas de transición críticas, el dominio/handler conserva la decisión autoritativa.
 
 ## Decisiones importantes
 
-- Valida la entrada ya normalizada si `Request` transforma sus valores.
-- Mantén mensajes explícitos en las reglas cuando esa sea la convención del proyecto; evita constantes externas para mensajes de una sola regla.
-- No dupliques reglas entre atributos, filtros MVC y FluentValidation sin una razón clara.
-- Define límites de página y tamaño para proteger la base de datos. Ajusta los valores a los requisitos reales, no copies el máximo del ejemplo.
-- Si el proyecto permite tamaños especiales (por ejemplo, `ALL`), valida también sus interacciones con `Page` y el cálculo de páginas.
-- No confundas errores de payload con reglas de negocio que requieren consultar el estado persistido. La unicidad concurrente debe protegerse también en persistencia cuando aplique.
-- Si una operación recibe solo un ID, no agregues un validator/request de cuerpo para validar el route binding; usa el mecanismo apropiado del host y el tratamiento del caso de uso.
+- Valida los valores ya normalizados por `Request`.
+- Declara mensajes en la regla cuando esa sea la convención del proyecto; evita constantes externas para reglas locales.
+- Usa `IsInEnum()` para validar enums recibidos; no confíes en el cast del model binder ni dupliques la regla con `[EnumDataType]`.
+- Expresa reglas entre campos y condicionales con FluentValidation (`Equal`, `When`, `Must`, etc.); deja la regla simple de campo en DataAnnotations.
+- Si una regla usa `MustAsync`/`CustomAsync`/condición asíncrona, ejecuta `ValidateAsync` o `ValidateAndThrowAsync` y propaga el `CancellationToken`; no uses validación síncrona.
+- Coloca los validators en la slice del Request al que validan: `Create/Validator.cs`, `Get/Validator.cs` o `Update/Validator.cs`. No crees `Delete/Validator.cs` por simetría si Delete solo recibe un ID.
+- No dupliques la misma regla entre DataAnnotations, FluentValidation y el controller. Las invariantes críticas pueden y deben tener protección autoritativa en el dominio/persistencia además de un pre-chequeo de validación.
+- Mantén mensajes explícitos y límites de paginación ajustados al contrato; si existe `ALL`, valida también su interacción con `Page`.

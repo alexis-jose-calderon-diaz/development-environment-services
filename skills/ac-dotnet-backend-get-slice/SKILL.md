@@ -20,27 +20,28 @@ Ayuda a implementar y explicar un CRUD de backend .NET, desde los casos de uso h
 
 1. Lee instrucciones, TFM/versión de C# y slices CRUD vecinas. Identifica persistencia, validación, contratos, rutas, seguridad y DI antes de elegir una estructura.
 2. Delimita las operaciones solicitadas y su comportamiento: resultado de Create, lecturas de Get, mutación de Update y política de Delete. No agregues operaciones ni reglas de negocio implícitas.
-3. Organiza cada caso de uso en su slice y decide archivo por archivo si aplica. Un archivo de referencia explica las variantes de un mismo tipo a través del CRUD; no implica juntar las acciones en un mismo archivo de código.
-4. Para `Get`, conserva la combinación de `GetById` y `GetAll` cuando compartan deliberadamente su contrato y proyección. `GetById` recibe el ID como escalar; `GetAll` recibe un `Request` compuesto cuando necesite filtros/paginación.
-5. Para mutaciones, valida la entrada, respeta invariantes, persiste los cambios y propaga `CancellationToken`. Usa el modelo de dominio/entidad apropiado; no reutilices `Data` de lectura para escribir.
-6. Expón las operaciones mediante controllers delgados, declara explícitamente el origen de parámetros y conserva autenticación/policies. Integra DI y nombres de endpoint según las convenciones existentes.
-7. Explica qué archivos se crearon/modificaron, a qué slice pertenecen, por qué aplican o se omitieron, los resultados HTTP y las decisiones funcionales. Ejecuta solo las validaciones pertinentes al cambio de código solicitado.
+3. Separa las validaciones: DataAnnotations en el DTO `Request` para reglas simples de contrato; FluentValidation para contrato complejo, enums y reglas de comportamiento. No dupliques la misma regla en ambos mecanismos.
+4. Organiza cada caso de uso en su slice y decide archivo por archivo si aplica. Un archivo de referencia explica las variantes de un mismo tipo a través del CRUD; no implica juntar las acciones en un mismo archivo de código.
+5. Para `Get`, conserva la combinación de `GetById` y `GetAll` cuando compartan deliberadamente su contrato y proyección. `GetById` recibe el ID como escalar; `GetAll` recibe un `Request` compuesto cuando necesite filtros/paginación.
+6. Para mutaciones, valida la entrada, respeta invariantes, persiste los cambios y propaga `CancellationToken`. Usa el modelo de dominio/entidad apropiado; no reutilices `Data` de lectura para escribir.
+7. Expón las operaciones mediante controllers delgados, declara explícitamente el origen de parámetros y conserva autenticación/policies. Integra DI y nombres de endpoint según las convenciones existentes.
+8. Explica qué archivos se crearon/modificaron, a qué slice pertenecen, por qué aplican o se omitieron, los resultados HTTP y las decisiones funcionales. Ejecuta solo las validaciones pertinentes al cambio de código solicitado.
 
 ## Referencias por archivo
 
 Consulta las guías por tipo de archivo. Cada una indica en qué slices CRUD aplica y cuándo omitirla:
 
-| Archivo o responsabilidad | Guía |
-|---|---|
-| Handler de Application | [handler.md](references/handler.md) |
-| Request de entrada | [request.md](references/request.md) |
-| Validación de entrada | [validator.md](references/validator.md) |
-| Modelo de lectura | [data.md](references/data.md) |
-| Resultados y contratos | [response.md](references/response.md) |
-| Proyección de lectura | [projections.md](references/projections.md) |
-| Conversión de lectura | [extensions.md](references/extensions.md) |
-| Controllers HTTP | [controller.md](references/controller.md) |
-| Nombres/operation IDs HTTP | [endpoint-names.md](references/endpoint-names.md) |
-| Registro DI del módulo | [module-registration.md](references/module-registration.md) |
+| Archivo o responsabilidad  | Guía                                                        |
+| -------------------------- | ----------------------------------------------------------- |
+| Handler de Application     | [handler.md](references/handler.md)                         |
+| Request de entrada         | [request.md](references/request.md)                         |
+| Validación de entrada      | [validator.md](references/validator.md)                     |
+| Modelo de lectura          | [data.md](references/data.md)                               |
+| Resultados y contratos     | [response.md](references/response.md)                       |
+| Proyección de lectura      | [projections.md](references/projections.md)                 |
+| Conversión de lectura      | [extensions.md](references/extensions.md)                   |
+| Controllers HTTP           | [controller.md](references/controller.md)                   |
+| Nombres/operation IDs HTTP | [endpoint-names.md](references/endpoint-names.md)           |
+| Registro DI del módulo     | [module-registration.md](references/module-registration.md) |
 
 `Data`, `Projections` y `Extensions` suelen corresponder a consultas; no los generes para mutaciones por simetría. `EndpointNames` y el registro de módulo son condicionales a las convenciones del proyecto. Sigue el TFM y las convenciones existentes: los ejemplos orientan, no son una plantilla que deba copiarse sin adaptación.

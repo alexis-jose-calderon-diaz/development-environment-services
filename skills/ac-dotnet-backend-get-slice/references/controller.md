@@ -99,3 +99,5 @@ public sealed class DeleteController(Delete.Handler handler) : ControllerBase
 - Conserva autorización y policies existentes. No añadas roles ni cambies autenticación sin requisito explícito.
 - Declara los status codes relevantes para el OpenAPI del proyecto.
 - Usa nombres, rutas, tags y summaries de acuerdo con las convenciones locales. Consulta `endpoint-names.md` si existen constantes de operation ID.
+- Con `[ApiController]`, MVC ejecuta DataAnnotations del DTO enlazado y produce automáticamente 400 cuando ModelState es inválido; no agregues un `ModelState.IsValid` redundante.
+- FluentValidation no ejecuta automáticamente esos atributos DataAnnotations. Ejecútalo mediante el pipeline asíncrono de Application o una integración que soporte async; si hay reglas `MustAsync`, no dependas de una validación MVC síncrona.

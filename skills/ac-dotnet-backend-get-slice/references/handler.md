@@ -127,6 +127,7 @@ Los fragmentos son esquemáticos: adapta la construcción de entidades, mutacion
 - No asumas que se puede devolver “todo” con `PageSize = ALL`. Si el proyecto lo permite, sigue sus límites, reglas y significado de `TotalPages`.
 - Si el proveedor de EF Core no puede traducir un filtro o método, revisa la traducción y el SQL; no materialices toda la tabla para aplicar el filtro en memoria.
 - Propaga `CancellationToken` como último parámetro en todas las operaciones asíncronas y pásalo a persistencia/servicios compatibles.
+- Ejecuta FluentValidation antes de efectos laterales; si el validator contiene reglas asíncronas, usa `ValidateAndThrowAsync` y propaga el token.
 - No traslades invariantes del dominio al controller ni confíes en validaciones del cliente para protegerlas.
 - Para Create, una comprobación previa de duplicados no reemplaza la restricción única de la BD cuando corresponda; traduce conflictos concurrentes según el patrón existente.
 - Para Update/Delete, carga solo lo necesario. Si el dominio requiere estado o dependencias para validar la mutación, consulta ese estado explícitamente; no uses una proyección de lectura como entidad editable.
