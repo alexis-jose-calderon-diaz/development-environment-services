@@ -1,16 +1,21 @@
-# `Handler.cs`
+# `Handler.cs` en las slices CRUD
 
 ## Responsabilidad
 
-Coordina el caso de uso de lectura: consulta persistencia, aplica validación y filtros, materializa la proyección y devuelve el contrato público. No debe contener lógica HTTP ni mutar datos.
+Coordina el caso de uso de su slice. Cada handler pertenece a una operación/capacidad y concentra la interacción de Application con sus puertos; no contiene lógica HTTP. La referencia es única para explicar las variantes CRUD, aunque el código tenga `Create/Handler.cs`, `Get/Handler.cs`, `Update/Handler.cs` y `Delete/Handler.cs`.
 
 ## Cuándo incluirlo
 
-Siempre que se implemente una slice. Si ambas operaciones comparten deliberadamente proyección, transformación y contrato de elemento, el handler puede exponer dos overloads: uno recibe `id` y el otro un `Request`. Si las lecturas tienen responsabilidades o contratos diferentes, separarlas es más claro.
+Incluye un `Handler.cs` por slice de código según la estructura del proyecto; no agrupes todo el CRUD en una clase ni crees un handler por cada endpoint GET sin necesidad.
+
+- **Create**: recibe el `Request` compuesto, valida, construye/agrega la entidad o invoca el agregado y persiste; retorna directamente el ID cuando esa es la convención.
+- **Get**: puede tener `Handle(id, cancellationToken)` y `Handle(request, cancellationToken)` para `GetById` y `GetAll`. Manténlos juntos si comparten proyección, transformación y contrato de elemento. Si no, considera slices independientes.
+- **Update**: recibe el ID aparte y un `Request` con los campos editables cuando la entrada sea compuesta; carga el estado necesario, aplica invariantes y persiste.
+- **Delete**: recibe directamente el ID cuando no hay otra entrada; ejecuta borrado físico o lógico según el dominio y traduce conflictos de negocio conforme al proyecto.
 
 ## Ejemplo
 
-El ejemplo asume un puerto `IAppDbContext`, una entidad `ProductEntity`, EF Core y un `PageSize` entero validado. Sustituye estos nombres y abstracciones por los del proyecto.
+El ejemplo siguiente se concentra en la slice `Get`. Usa un puerto `IAppDbContext`, `ProductEntity`, EF Core y `PageSize` entero validado; sustituye los nombres por los del proyecto. Las demás variantes se muestran después.
 
 ```csharp
 public sealed class Handler(
@@ -72,12 +77,56 @@ public sealed class Handler(
 }
 ```
 
+## Forma de los otros handlers
+
+```csharp
+// Create/Handler.cs: resultado escalar directo; no crear Response para envolver el ID.
+public async Task<int> Handle(Request request, CancellationToken cancellationToken)
+{
+    await validator.ValidateAndThrowAsync(request, cancellationToken);
+    ProductEntity product = new()
+    {
+        Name = request.Name,
+        // Inicializa también los demás miembros requeridos por el dominio.
+    };
+    dbContext.Products.Add(product);
+    await dbContext.SaveChangesAsync(cancellationToken);
+    return product.Id;
+}
+
+// Update/Handler.cs: ID separado del payload de actualización.
+public async Task Handle(int id, Request request, CancellationToken cancellationToken)
+{
+    ProductEntity product = await dbContext.Products
+        .SingleOrDefaultAsync(item => item.Id == id, cancellationToken)
+        ?? throw new NotFoundException();
+    product.Rename(request.Name); // aplica invariantes del dominio
+    await dbContext.SaveChangesAsync(cancellationToken);
+}
+
+// Delete/Handler.cs: sin Request artificial cuando solo recibe un ID.
+public async Task Handle(int id, CancellationToken cancellationToken)
+{
+    ProductEntity product = await dbContext.Products
+        .SingleOrDefaultAsync(item => item.Id == id, cancellationToken)
+        ?? throw new NotFoundException();
+    dbContext.Products.Remove(product);
+    await dbContext.SaveChangesAsync(cancellationToken);
+}
+```
+
+Los fragmentos son esquemáticos: adapta la construcción de entidades, mutaciones, borrado lógico/físico, transacciones y manejo de conflictos a las reglas del dominio.
+
 ## Decisiones importantes
 
-- Filtra antes de contar y calcula `TotalCount` antes de aplicar `Skip`/`Take`.
+- En `GetAll`, filtra antes de contar y calcula `TotalCount` antes de aplicar `Skip`/`Take`.
 - Usa un orden estable, incluyendo un desempate único, para que los elementos no salten entre páginas.
 - Propaga `CancellationToken` a EF Core y a validaciones asíncronas.
 - Mantén la consulta como `IQueryable` hasta completar filtros, orden, paginación y proyección.
-- Define cómo tratar un ID inexistente según el proyecto (`NotFoundException`, `null` u otro resultado); no devuelvas una respuesta exitosa vacía por accidente.
+- Define cómo tratar un ID inexistente en Get/Update/Delete según el contrato del proyecto; no devuelvas éxito por accidente.
 - No asumas que se puede devolver “todo” con `PageSize = ALL`. Si el proyecto lo permite, sigue sus límites, reglas y significado de `TotalPages`.
 - Si el proveedor de EF Core no puede traducir un filtro o método, revisa la traducción y el SQL; no materialices toda la tabla para aplicar el filtro en memoria.
+- Propaga `CancellationToken` como último parámetro en todas las operaciones asíncronas y pásalo a persistencia/servicios compatibles.
+- No traslades invariantes del dominio al controller ni confíes en validaciones del cliente para protegerlas.
+- Para Create, una comprobación previa de duplicados no reemplaza la restricción única de la BD cuando corresponda; traduce conflictos concurrentes según el patrón existente.
+- Para Update/Delete, carga solo lo necesario. Si el dominio requiere estado o dependencias para validar la mutación, consulta ese estado explícitamente; no uses una proyección de lectura como entidad editable.

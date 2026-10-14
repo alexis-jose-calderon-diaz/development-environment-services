@@ -1,12 +1,18 @@
-# `Response.cs`
+# `Response.cs` y resultados de las slices CRUD
 
 ## Responsabilidad
 
-Define el contrato público que Application entrega al controller. Para `GetById`, devuelve un elemento estructurado; para `GetAll`, devuelve la colección y los metadatos de paginación definidos por la API.
+Define un resultado/contrato cuando la operación lo necesita. Distingue el resultado de Application del status code HTTP: no todas las acciones requieren un tipo `Response`.
 
 ## Cuándo incluirlo
 
-Incluye `Response` cuando el resultado representa un contrato estructurado. No crees un response para escalares como un ID, booleano o string. Si dos operaciones comparten deliberadamente el mismo elemento de respuesta, reutilízalo; no compartas contratos por casualidad.
+Aplicación por slice:
+
+- **Create**: si retorna el ID autogenerado, devuelve `Task<int>` u otro escalar definido por el proyecto; no lo envuelvas en un `Response` artificial. Un resultado estructurado sí justifica un contrato.
+- **Get**: `GetById` devuelve el contrato del elemento; `GetAll` devuelve elementos más metadatos de paginación. Comparte el contrato de elemento cuando sea intencional.
+- **Update/Delete**: si no devuelven datos, retorna `Task` y el controller puede responder `204 No Content`; no crees un response vacío.
+
+No compartas contratos por casualidad. Un cambio en un `Response` público puede afectar OpenAPI y consumidores.
 
 ## Ejemplo
 
@@ -26,7 +32,7 @@ public sealed record PaginatedResponse
 }
 ```
 
-Si el proyecto ya ofrece un wrapper genérico de paginación, úsalo en vez de duplicar `PaginatedResponse`.
+Si el proyecto ya ofrece un wrapper genérico de paginación, úsalo en vez de duplicar `PaginatedResponse`. La API puede declarar un status code aunque Application retorne un escalar o nada.
 
 ## Decisiones importantes
 
@@ -34,3 +40,4 @@ Si el proyecto ya ofrece un wrapper genérico de paginación, úsalo en vez de d
 - No pongas valores por defecto para ocultar datos que el handler debería proporcionar.
 - Mantén fuera del response entidades EF, navegación lazy, tipos de infraestructura y detalles internos de paginación.
 - Decide y documenta cómo se representa una página vacía y el total de páginas, siguiendo el contrato existente.
+- Distingue `CreatedAtRoute`/201 para Create de `NoContent`/204 para Update/Delete según el contrato HTTP local; el controller decide el status, no un `Response` de Application.

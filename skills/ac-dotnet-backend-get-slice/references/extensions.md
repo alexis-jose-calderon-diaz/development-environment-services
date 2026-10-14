@@ -1,12 +1,12 @@
-# `Extensions.cs`
+# `Extensions.cs` para conversiones de lectura
 
 ## Responsabilidad
 
-Convierte el modelo interno `Data` en el `Response` público después de materializar la consulta. Mantiene separadas la expresión traducible de EF Core y las transformaciones ejecutadas en memoria.
+En este patrón convierte `Data` en el `Response` público después de materializar una lectura. Mantiene separadas la proyección traducible de EF Core y las transformaciones ejecutadas en memoria.
 
 ## Cuándo incluirlo
 
-Inclúyelo si la slice transforma `Data` a `Response` y el proyecto asigna esa transformación a un archivo `Extensions.cs`. No lo crees para una conversión trivial si el proyecto la coloca directamente en otro lugar.
+Normalmente aplica a `Get/Extensions.cs` cuando `GetById` y `GetAll` transforman el mismo `Data` al mismo contrato de elemento. No es un archivo CRUD obligatorio: no lo crees para Create/Update/Delete si no hay esa conversión. Si el proyecto coloca el mapeo en otro sitio, sigue su patrón.
 
 ## Ejemplo con extension blocks de C# 14
 
@@ -33,3 +33,4 @@ La sintaxis de extension blocks requiere C# 14. Comprueba el TFM y `LangVersion`
 - No consultes servicios ni bases de datos desde la conversión.
 - No agregues valores por defecto que conviertan datos ausentes en aparentes valores válidos.
 - Mantén la conversión local a su slice y reutiliza la respuesta compartida solo cuando el contrato público sea intencionalmente el mismo.
+- No conviertas entidades de comando en `Data`/`Response` de lectura como paso obligatorio. Aplica los cambios mediante métodos del dominio/agregado y el flujo de persistencia definido por el proyecto.

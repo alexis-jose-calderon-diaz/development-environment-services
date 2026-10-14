@@ -1,12 +1,18 @@
-# `Projections.cs`
+# `Projections.cs` en las lecturas
 
 ## Responsabilidad
 
-Define la proyección traducible de la entidad o consulta EF Core al modelo `Data`. La proyección selecciona explícitamente las columnas necesarias y permite aplicar filtros, orden y paginación antes de materializar.
+Define una proyección traducible de EF Core al modelo `Data`. Su ámbito normal es una consulta de lectura como `Get`; selecciona columnas explícitas y permite filtrar, ordenar y paginar antes de materializar.
 
 ## Cuándo incluirlo
 
-Inclúyelo si el proyecto centraliza proyecciones de consultas en archivos propios de la slice. Para una consulta EF pública, sigue esa convención aunque la proyección sea pequeña.
+Dónde/cuándo aplicarlo:
+
+- **Get**: úsalo en `Get/Projections.cs` para `GetById` y `GetAll` cuando comparten el modelo de lectura; pueden consumir el mismo `ToData`.
+- **Create/Update/Delete**: no lo generes como requisito CRUD. Las mutaciones necesitan agregar o modificar el modelo de dominio persistido, no proyectarlo a un `Data` de lectura.
+- Otras consultas de lectura pueden tener sus propias proyecciones si el proyecto organiza cada capacidad en slices.
+
+Para una consulta EF pública, sigue la convención local de proyección manual aunque sea pequeña.
 
 ## Ejemplo
 
@@ -30,3 +36,4 @@ internal static class Projections
 - Mantén la proyección pura y traducible. Coloca cálculos o formatos no traducibles después de materializar, en la conversión correspondiente.
 - No dependas de AutoMapper ni de `ProjectTo` si la convención local exige proyección manual.
 - Mantén la proyección dentro de la slice; compártela solo si el diseño y las reglas arquitectónicas autorizan explícitamente ese acoplamiento.
+- Si una mutación necesita consultar datos relacionados para una regla, carga el estado requerido de forma explícita; no uses `ToData` para mutar ni guardar la proyección.
