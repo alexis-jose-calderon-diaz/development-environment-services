@@ -73,6 +73,28 @@ revisión del alcance y el plan. No integres antes de revisar el resultado.
 - Mantén las convenciones existentes y no sustituyas decisiones confirmadas por
   suposiciones.
 
+## Herramientas disponibles
+
+En el entorno Ubuntu de referencia están instalados:
+
+- Sistema y utilidades: `bubblewrap`, `build-essential`, `command-not-found`,
+  `dnsutils`, `fd-find`, `gh`, `git`, `iproute2`, `iputils-ping`, `jq`, `less`,
+  `locales`, `openssh-server`, `procps`, `ripgrep`, `rsync`, `shellcheck`,
+  `sqlite3`, `sudo`, `tailscale`, `tmux`, `tree`, `tzdata`, `universal-ctags`,
+  `unzip`, `vim`, `wget`, `zsh`, `ca-certificates` y `curl`.
+- Contenedores y base de datos: `docker.io`, `docker-compose-v2` y
+  `postgresql-client` (`psql`).
+- Desarrollo: .NET SDK, `python3`, Oh My Zsh, NVM, Node.js, `npm`, OpenCode,
+  OpenSpec, `pnpm`, Yarn, `uv`/`uvx`, `yq` y `hadolint`.
+
+- En Ubuntu, `fd-find` expone el comando `fdfind` (no `fd`); `ripgrep` expone
+  `rg`, y `universal-ctags` expone `ctags`.
+- NVM se carga desde `~/.zshenv`, por lo que está disponible en sesiones Zsh
+  interactivas y no interactivas.
+- La presencia de un CLI o paquete no implica que su servicio esté activo; por
+  ejemplo, comprueba por separado el daemon de Docker, OpenSSH o Tailscale cuando
+  la tarea dependa de ellos.
+
 ## Herramientas y validación
 
 - Usa herramientas orientadas a búsqueda y lectura; para JSON o YAML prefiere
