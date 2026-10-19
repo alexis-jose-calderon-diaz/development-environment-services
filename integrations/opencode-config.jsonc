@@ -41,12 +41,6 @@
         "oauth": false,
         "headers": { "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}" },
         "disabled": false
-      },
-      "postgres": {
-        "type": "local",
-        "command": ["uvx", "--with", "mcp[cli]<2", "postgres-mcp", "--access-mode=restricted"],
-        "environment": { "DATABASE_URI": "{env:DATABASE_URI}" },
-        "disabled": false
       }
     }
   }
