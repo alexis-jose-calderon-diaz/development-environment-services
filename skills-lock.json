@@ -1,24 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "create-skill": {
-      "source": "dotnet/skills",
-      "sourceType": "github",
-      "skillPath": ".agents/skills/create-skill/SKILL.md",
-      "computedHash": "16541f7575ee5fc02b4aed2456b6aa9dca4bbdcd4abd0efcb2803e00bbd04914"
-    },
-    "create-skill-test": {
-      "source": "dotnet/skills",
-      "sourceType": "github",
-      "skillPath": ".agents/skills/create-skill-test/SKILL.md",
-      "computedHash": "d62ee78567006b76c581f02848f32917f6696b3c668067ad28e8ad86c9519240"
-    },
-    "improve-skill-quality": {
-      "source": "dotnet/skills",
-      "sourceType": "github",
-      "skillPath": ".agents/skills/improve-skill-quality/SKILL.md",
-      "computedHash": "7dad0f681c2fd646ba033138d5a84952faa43d3b5552cbf49f854e512b7f2af1"
-    },
     "openspec-apply-change": {
       "source": "Fission-AI/OpenSpec",
       "sourceType": "github",
@@ -60,12 +42,6 @@
       "sourceType": "github",
       "skillPath": "skills/openspec-verify-change/SKILL.md",
       "computedHash": "c9f17b600cf97936f7476cb70a2884ff89bcffeb24383e680699ace11ca41a82"
-    },
-    "skill-creator": {
-      "source": "anthropics/skills",
-      "sourceType": "github",
-      "skillPath": "skills/skill-creator/SKILL.md",
-      "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
     }
   }
 }

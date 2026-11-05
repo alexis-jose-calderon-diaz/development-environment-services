@@ -9,11 +9,15 @@
   "providers": {
     "openai": {
       "models": {
-        "gpt-5.6-luna": {
+        "gpt-6-luna": {
           "limit": { "context": 400000, "input": 384000, "output": 16000 }
         }
       }
     }
+  },
+  "experimental": {
+    "todo": true,
+    "background_compaction": true
   },
   "lsp": true,
   "permissions": [
