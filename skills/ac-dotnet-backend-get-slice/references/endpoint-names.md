@@ -6,7 +6,7 @@ Centraliza los nombres estables de las operaciones HTTP cuando el proyecto los u
 
 ## Cuándo incluirlo
 
-Actualiza el archivo del módulo con las operaciones CRUD que realmente se expongan si ya existe esa convención. Si el proyecto no centraliza nombres, no agregues este archivo por obligación.
+Actualiza el archivo del módulo con las operaciones CRUD y especializadas que realmente se expongan si ya existe esa convención. Si el proyecto no centraliza nombres, no agregues este archivo por obligación.
 
 ## Ejemplo
 
@@ -35,6 +35,7 @@ En el controller, usa las constantes en los atributos correspondientes:
 - Sigue el formato de nombres existente y evita duplicados.
 - Conserva operation IDs estables porque clientes OpenAPI generados pueden depender de ellos.
 - No hardcodees el mismo nombre en varios atributos si el proyecto ya provee constantes.
-- Añade solo las operaciones CRUD realmente solicitadas para el módulo; no reorganices ni renombres otros endpoints.
-- `GetById` debe conservar el nombre de ruta si Create usa `CreatedAtRoute` para apuntar a la lectura recién creada.
+- Añade solo las operaciones realmente solicitadas para el módulo; no reorganices ni renombres otros endpoints.
+- Para transiciones usa nombres propios del caso de uso (`CotizacionLiberar`, `CotizacionAnular`, `CotizacionUpdateResultado`) sin inventar `Delete` cuando la entidad se anula.
+- Cada módulo de entidad tiene un solo `GetById` y un solo `GetAll` paginado, ambos con nombres/operation IDs propios; no crees constantes para listados alternativos del padre o del hijo. `GetById` conserva el nombre de ruta si Create usa `CreatedAtRoute` para apuntar a la lectura recién creada.
 - Sigue los nombres existentes para Create/Update/Delete y no inventes constants si el framework o el proyecto los deriva automáticamente.

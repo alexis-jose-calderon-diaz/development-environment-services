@@ -6,16 +6,17 @@ Coordina el caso de uso de su slice. Cada handler pertenece a una operación/cap
 
 ## Cuándo incluirlo
 
-Incluye un `Handler.cs` por slice de código según la estructura del proyecto; no agrupes todo el CRUD en una clase ni crees un handler por cada endpoint GET sin necesidad.
+Incluye un `Handler.cs` por slice de código del módulo propietario de cada entidad; no agrupes todo el CRUD en una clase ni traslades operaciones de una entidad hija al handler del padre.
 
-- **Create**: recibe el `Request` compuesto, valida, construye/agrega la entidad o invoca el agregado y persiste; retorna directamente el ID cuando esa es la convención.
-- **Get**: puede tener `Handle(id, cancellationToken)` y `Handle(request, cancellationToken)` para `GetById` y `GetAll`. Manténlos juntos si comparten proyección, transformación y contrato de elemento. Si no, considera slices independientes.
+- **Create**: recibe el `Request` compuesto, valida, construye/agrega la entidad o invoca el agregado y persiste; retorna directamente el ID cuando esa es la convención. Si crea un snapshot de otra entidad, consulta el origen mediante modelos `Data` y proyecciones propios de Create, y construye entidades nuevas.
+- **Get**: siempre contiene `Handle(id, cancellationToken)` y `Handle(request, cancellationToken)` para `GetById` y el único `GetAll` paginado. Ambos usan la misma proyección, transformación y respuesta de elemento; adapta la proyección para cubrir el contrato compartido, no crees otro Get para ese listado.
 - **Update**: recibe el ID aparte y un `Request` con los campos editables cuando la entrada sea compuesta; carga el estado necesario, aplica invariantes y persiste.
 - **Delete**: recibe directamente el ID cuando no hay otra entrada; ejecuta borrado físico o lógico según el dominio y traduce conflictos de negocio conforme al proyecto.
+- **Operación especializada**: modela una transición (`Liberar`, `Anular`, `UpdateEstado`, etc.) en su propia slice; valida rol, propietario y estado, registra actor/instante cuando corresponda y no la disfraza de Update/Delete genérico.
 
 ## Ejemplo
 
-El ejemplo siguiente se concentra en la slice `Get`. Usa un puerto `IAppDbContext`, `ProductEntity`, EF Core y `PageSize` entero validado; sustituye los nombres por los del proyecto. Las demás variantes se muestran después.
+El ejemplo siguiente se concentra en la slice `Get` de la entidad `ProductEntity`. Usa un puerto `IAppDbContext`, EF Core y `PageSize` entero positivo y finito validado por FluentValidation; sustituye los nombres por los del proyecto. Las demás variantes se muestran después.
 
 ```csharp
 public sealed class Handler(
@@ -49,7 +50,7 @@ public sealed class Handler(
             query = query.Where(product => product.Active == request.Active.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
+        if (!string.IsNullOrEmpty(request.Search))
         {
             query = query.Where(product => product.Name.Contains(request.Search));
         }
@@ -119,15 +120,20 @@ Los fragmentos son esquemáticos: adapta la construcción de entidades, mutacion
 
 ## Decisiones importantes
 
-- En `GetAll`, filtra antes de contar y calcula `TotalCount` antes de aplicar `Skip`/`Take`.
-- Usa un orden estable, incluyendo un desempate único, para que los elementos no salten entre páginas.
+- En el único `GetAll` paginado de la entidad, aplica autorización y alcance por usuario antes de filtrar y contar: no reveles datos ajenos ni siquiera en los totales. En `GetById`, filtra por propietario antes de buscar cuando la lectura ajena deba responder `404`.
+- `Search` es obligatorio pero admite `""` (sin filtro textual); aplica los demás filtros solo si tienen valor. Un filtro adicional ausente o `null` no debe limitar la consulta.
+- Filtra antes de contar y calcula `TotalCount` antes de `Skip`/`Take`. Usa un orden estable con desempate único (`OrderBy(...).ThenBy(...)`); un segundo `OrderBy` reemplaza el anterior.
 - Propaga `CancellationToken` a EF Core y a validaciones asíncronas.
 - Mantén la consulta como `IQueryable` hasta completar filtros, orden, paginación y proyección.
 - Define cómo tratar un ID inexistente en Get/Update/Delete según el contrato del proyecto; no devuelvas éxito por accidente.
-- No asumas que se puede devolver “todo” con `PageSize = ALL`. Si el proyecto lo permite, sigue sus límites, reglas y significado de `TotalPages`.
+- Toda consulta de listado requiere `Page` y `PageSize` positivos y aplica `Skip` y `Take`; si el tipo `PageSize` ofrece `ALL`, rechaza esa opción para esta operación en FluentValidation. Nunca devuelvas la colección completa como alternativa.
+- Proyecta únicamente la entidad del módulo y sus referencias hacia entidades superiores; no incluyas colecciones hijas en `GetById` ni en los items del listado. Las entidades hijas disponen de su propio módulo Get, también paginado.
 - Si el proveedor de EF Core no puede traducir un filtro o método, revisa la traducción y el SQL; no materialices toda la tabla para aplicar el filtro en memoria.
 - Propaga `CancellationToken` como último parámetro en todas las operaciones asíncronas y pásalo a persistencia/servicios compatibles.
 - Ejecuta FluentValidation antes de efectos laterales; si el validator contiene reglas asíncronas, usa `ValidateAndThrowAsync` y propaga el token.
 - No traslades invariantes del dominio al controller ni confíes en validaciones del cliente para protegerlas.
 - Para Create, una comprobación previa de duplicados no reemplaza la restricción única de la BD cuando corresponda; traduce conflictos concurrentes según el patrón existente.
 - Para Update/Delete, carga solo lo necesario. Si el dominio requiere estado o dependencias para validar la mutación, consulta ese estado explícitamente; no uses una proyección de lectura como entidad editable.
+- Para snapshots de Create, proyecta solo las columnas necesarias, materializa antes de convertir y clona los objetos anidados; no adjuntes al nuevo agregado las instancias/navegaciones del origen. Mantén la comprobación de estado del origen y la copia dentro de la misma transacción cuando el requisito exija consistencia.
+- Para transiciones, valida estados y roles en Application/dominio, no en el controller. Si la autorización depende del propietario, aplica el alcance al consultar para evitar revelar un recurso ajeno; usa el proveedor UTC del proyecto para fechas de creación y cambios de estado.
+- Si una operación requiere múltiples escrituras atómicas o control de concurrencia, consulta [concurrency.md](concurrency.md).

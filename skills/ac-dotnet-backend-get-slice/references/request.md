@@ -2,30 +2,38 @@
 
 ## Responsabilidad
 
-Describe el payload compuesto de una operación de Application. No es un envoltorio universal para cada parámetro: cada `Request` vive junto a su slice y solo se crea cuando aporta significado.
+Describe el payload compuesto de una operación de Application. No es un envoltorio universal para cada parámetro: cada `Request` vive junto a su slice y solo se crea cuando aporta significado. Sus propiedades y su anidamiento deben corresponder al modelo de la entidad de origen y a los campos editables del caso de uso, sin copiar propiedades no autorizadas.
 
 ## Cuándo incluirlo
 
 Dónde/cuándo aplicarlo:
 
 - **Create**: normalmente tiene `Create/Request.cs` para los datos necesarios para crear.
-- **Get**: `Get/Request.cs` representa filtros y paginación de `GetAll`; `GetById` sigue recibiendo el ID directamente si ese es el patrón.
+- **Get**: siempre existe `Get/Request.cs` para el único `GetAll` paginado de la entidad; `GetById` recibe el ID directamente, sin Request artificial, dentro de la misma slice Get.
 - **Update**: usa `Update/Request.cs` para los campos editables; pasa el ID de ruta aparte del payload.
 - **Delete**: no crees `Delete/Request.cs` si solo necesita un ID. Si hay una razón funcional para datos adicionales, modela esa entrada y nómbrala con claridad.
+- **Transiciones**: recibe un ID directamente cuando no hay payload; si la operación requiere motivo u otros datos compuestos, crea su propio `Request` sin reutilizar el de Update.
 
 No crees requests vacíos ni envelopes que solo contengan un ID. Mantén los tipos compatibles con JSON y las convenciones del proyecto.
 
 ## Ejemplo
 
-`Get/Request.cs` representa filtros y paginación del listado:
+`Get/Request.cs` representa filtros y paginación obligatorios del listado; el filtro adicional `Active` sigue siendo opcional:
 
 ```csharp
+using System.ComponentModel.DataAnnotations;
+
 public sealed record Request
 {
     public bool? Active { get; init; }
 
+    [Required(AllowEmptyStrings = true, ErrorMessage = "El término de búsqueda es obligatorio.")]
     [MaxLength(100, ErrorMessage = "La búsqueda no puede exceder los 100 caracteres.")]
-    public string? Search { get; init; }
+    public required string? Search
+    {
+        get;
+        init => field = value?.Trim().ToUpperInvariant();
+    }
 
     [Range(1, int.MaxValue, ErrorMessage = "La página debe ser mayor o igual a 1.")]
     public required int Page { get; init; }
@@ -44,7 +52,11 @@ public sealed record Request
 {
     [Required(ErrorMessage = "El nombre es obligatorio.")]
     [StringLength(45, MinimumLength = 4)]
-    public string Name { get; init; } = string.Empty;
+    public required string Name
+    {
+        get;
+        init => field = value?.Trim().ToUpperInvariant() ?? string.Empty;
+    } = string.Empty;
 
     [Range(0, 99)]
     public required int Order { get; init; }
@@ -55,9 +67,9 @@ public sealed record Request
 
 `Create/Request.cs` sigue el mismo principio, con los campos requeridos para crear. Si el proyecto asigna defaults o usa un enum de page size, conserva su semántica.
 
-## Validaciones contractuales simples: DataAnnotations
+## DataAnnotations para OpenAPI y MVC
 
-Declara en cada DTO `Request` las reglas simples, locales a una propiedad y expresables con atributos estándar: presencia, longitud, rango o formato. Así el contrato queda visible junto al campo que limita.
+Declara en cada DTO `Request` los atributos estándar aplicables (presencia, longitud, rango, formato o pertenencia a enum) para enriquecer OpenAPI y el contrato MVC. **Repite todas esas restricciones en FluentValidation**: Application debe poder validarlas sin depender del binding HTTP. Mantén mensajes y límites equivalentes; no agregues atributos que contradigan una regla del validator.
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -67,25 +79,38 @@ public sealed record Request
     [Required(ErrorMessage = "El nombre es obligatorio.")]
     [StringLength(45, MinimumLength = 4,
         ErrorMessage = "El nombre debe tener entre 4 y 45 caracteres.")]
-    public string Name { get; init; } = string.Empty;
+    public required string Name
+    {
+        get;
+        init => field = value?.Trim().ToUpperInvariant() ?? string.Empty;
+    } = string.Empty;
 
     [Range(0, 99, ErrorMessage = "El orden debe estar entre 0 y 99.")]
     public required int Order { get; init; }
 
+    [EnumDataType(typeof(ProductStatus), ErrorMessage = "El estado no es válido.")]
     public required ProductStatus Status { get; init; }
 }
 ```
 
-Aplica estas reglas simples a los DTOs de Create, Get o Update según sus contratos; no agregues `Request` a Delete si solo recibe un ID. Si `PageSize` es `int`, un rango simple puede ir en DataAnnotations; si es enum, valida sus valores con FluentValidation (`IsInEnum`). La pertenencia de otros enums también se valida con FluentValidation, no con `[EnumDataType]`.
+Aplica estas reglas a Create, Get o Update según su contrato; no agregues Request a Delete si solo recibe un ID. Si `PageSize` es `int`, `[Range]` describe el límite finito; si es un enum que incluye `ALL`, `[EnumDataType]` solo comprueba pertenencia y el validator debe **rechazar `ALL`**. Si el esquema generado aún ofrece un valor prohibido, ajusta el contrato/OpenAPI en lugar de asumir que el atributo lo elimina.
+
+## Asociaciones y nombres de tipos
+
+- Respeta la estructura de la entidad que representa la entrada: un objeto de valor/perfil técnico anidado sigue anidado como `PerfilTecnico`; un usuario relacionado no se convierte automáticamente en campos planos `UsuarioId`/`UsuarioNombre` si el contrato exige un objeto usuario.
+- Nombra los tipos auxiliares asociados con sufijo del concepto: `RequestUsuario`, `RequestPerfilTecnico`. Por ejemplo, un `Request` puede declarar `public required RequestPerfilTecnico PerfilTecnico { get; init; } = null!;`. No anides declaraciones de clases dentro de `Request`; los tipos siguen siendo top-level en el archivo apropiado y pueden ir en `Shared/` si realmente los comparten varias slices.
+- Si un campo anidado es obligatorio, admite `""` pero rechaza `null`, no lo normalices a `string.Empty` al deserializar: conserva la nulabilidad en la entrada para detectar el nulo y valida no-nulo y longitud, sin exigir `NotEmpty`.
+- El `Request` solo incluye datos permitidos por la operación. En Update no aceptes IDs de asociaciones inmutables, trazas ni tokens internos de concurrencia como datos de negocio; el ID de la entidad va separado si está en ruta.
 
 ## Decisiones importantes
 
-- Usa nullable para filtros opcionales cuando `null` signifique “no aplicar filtro”. No vuelvas obligatorio un filtro opcional por comodidad.
-- En cuerpos JSON, usa DataAnnotations para restricciones simples de contrato y los tipos/`required` conforme al TFM; FluentValidation cubre reglas complejas, enums y comportamiento. No uses atributos de binding de query (`[BindRequired]`) como sustituto de validación del body.
-- Normaliza strings en un solo lugar y antes de validarlas, si así lo hace el proyecto. No conviertas mayúsculas/minúsculas sin considerar la cultura y la semántica de búsqueda.
+- `Search`, `Page` y `PageSize` son siempre requeridos en GetAll. `Search` admite `""`/espacios normalizados a `""`, pero no nulos: usa `required string?` para preservar `null` hasta que `NotNull()` lo rechace y `[Required(AllowEmptyStrings = true)]` para el contrato MVC; no normalices `null` a `""`. Si el binding HTTP convierte `""` a `null`, corrige esa frontera sin volver inválida la búsqueda vacía.
+- Todos los filtros adicionales de GetAll (incluidos enums y booleanos) son nullable y no `required`; `null` significa no aplicar el filtro. No agregues varios listados para representar filtros distintos.
+- En cuerpos JSON usa `required` para presencia, DataAnnotations compatibles para describir restricciones y FluentValidation para **ejecutar todas las validaciones** en Application. No uses `[BindRequired]` ni `[FromQuery]` para sustituir el body del listado.
+- Normaliza strings en un solo lugar y antes de validarlas, si así lo hace el proyecto (por ejemplo, `Trim().ToUpperInvariant()`); no conviertas mayúsculas/minúsculas sin considerar semántica de búsqueda. Usa `string?` cuando `null` tenga significado propio, incluso para distinguir Search nulo de cadena vacía.
 - No pongas `IFormFile`, tipos MVC ni dependencias de transporte en un request de Application.
-- Asegura límites razonables de página y tamaño para evitar consultas ilimitadas. Las reglas concretas pertenecen a `Validator.cs`.
+- Asegura límites positivos y finitos para `Page` y `PageSize`; el validator rechaza tamaños ilimitados como `ALL` aunque el enum del proyecto los incluya.
 - En Update, incluye solo campos que la operación permite cambiar; no reutilices automáticamente el Request de Create.
 - En Create, no aceptes campos controlados por el servidor (por ejemplo, ID autogenerado) salvo que el contrato lo requiera expresamente.
 - Los parámetros escalares de significado claro (`id`, estado) suelen ir directamente al handler/controller; evita requests artificiales.
-- DataAnnotations y FluentValidation son mecanismos distintos: `[ApiController]` hace que MVC ejecute la validación de contrato del DTO y responda automáticamente con 400 si ModelState es inválido; `ValidateAndThrowAsync` no ejecuta automáticamente los atributos DataAnnotations. Si Application tiene callers que no pasan por MVC, asegúrate de que reciban la validación de contrato correspondiente.
+- DataAnnotations y FluentValidation son mecanismos distintos: `[ApiController]` ejecuta atributos del DTO enlazado y responde 400 si ModelState es inválido, mientras que `ValidateAndThrowAsync` ejecuta reglas FluentValidation pero no atributos. Ambos deben describir las mismas restricciones aplicables; Application no puede confiar en que MVC validó antes.

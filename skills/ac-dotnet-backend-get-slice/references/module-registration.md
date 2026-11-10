@@ -2,11 +2,11 @@
 
 ## Responsabilidad
 
-Integra handlers de cada slice y validators que realmente existan en el contenedor DI del módulo. El registro permite resolver dependencias sin convertir el módulo en una capa de lógica de negocio.
+Integra handlers y validators de las slices de **una sola entidad** en el contenedor DI del módulo. El registro permite resolver dependencias sin acoplar casos de uso de entidades distintas ni convertir el módulo en lógica de negocio.
 
 ## Cuándo incluirlo
 
-Actualiza el registro del módulo cuando el proyecto lo haga explícitamente. Al completar un CRUD, registra cada Handler propietario de su slice (`Create`, `Get`, `Update`, `Delete`) y solo los validators presentes. Si hay escaneo automático, no dupliques registros. Al añadir operaciones a un módulo existente, modifica su registro; no crees otro módulo sin necesidad.
+Actualiza el registro del módulo cuando el proyecto lo haga explícitamente. Cada entidad de negocio expuesta tiene su propio `Module.cs` con un `Get.Handler` para GetById/GetAll y un `IValidator<Get.Request>` para el listado paginado (GetById recibe un ID, no un Request). Registra handlers de mutación solo si esas operaciones se solicitaron y los validators de todos sus Requests con reglas; DataAnnotations no reemplaza ni vuelve innecesarios estos validators. Si hay escaneo automático, no dupliques registros. Al añadir una entidad nueva, crea su módulo propio y conéctalo al registro global; no incluyas sus slices en el módulo de la entidad padre.
 
 ## Ejemplo
 
@@ -22,7 +22,7 @@ services.AddScoped<IValidator<Get.Request>, Get.Validator>();
 services.AddScoped<IValidator<Update.Request>, Update.Validator>();
 ```
 
-Elimina las líneas de validators si esa slice no los necesita. Adapta namespaces y duraciones (`Scoped`, `Transient`, etc.) a la composición existente. Si introduces un módulo nuevo, revisa también el registro global de features.
+Omite líneas de validators solo en slices sin Request ni reglas de entrada (por ejemplo, Delete con solo un ID). Adapta namespaces y duraciones (`Scoped`, `Transient`, etc.) a la composición existente. Si introduces un módulo nuevo, revisa también el registro global de features.
 
 ## Decisiones importantes
 
@@ -30,4 +30,6 @@ Elimina las líneas de validators si esa slice no los necesita. Adapta namespace
 - No registres validators inexistentes ni dupliques registros ya cubiertos por escaneo.
 - Mantén el módulo limitado a composición DI; las rutas HTTP se descubren por el mecanismo del host, no por enumeración manual, salvo que la solución indique lo contrario.
 - Este archivo es integración del backend, no parte de la lógica de negocio de las slices. Omítelo si el registro automático ya cubre los tipos.
-- `GetById` y `GetAll` comparten el mismo `Get.Handler`; no registres handlers separados para ambos si son overloads de una sola slice.
+- `GetById` y el único `GetAll` paginado comparten siempre `Get.Handler` y el contrato de elemento; registra un solo handler y el validator de `Get.Request`.
+- `Cotizacion` y `ProductoCotizacion` se registran en módulos distintos. Una lectura del padre puede proyectar datos de una referencia superior como `Cliente`, pero no ejecuta handlers del hijo ni publica su listado bajo el módulo padre.
+- Una entrada anidada reutilizada entre Create y Update puede justificar un validator compartido dentro del módulo (`IValidator<RequestPerfilTecnico>`, por ejemplo); regístralo solo si ambas slices usan ese contrato. Aprovecha los puertos de tiempo/usuario ya registrados por el host, no crees dobles registros por handler.
