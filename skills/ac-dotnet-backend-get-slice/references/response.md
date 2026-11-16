@@ -9,7 +9,7 @@ Define un resultado/contrato cuando la operación lo necesita. Distingue el resu
 Aplicación por slice:
 
 - **Create**: si retorna el ID autogenerado, devuelve `Task<int>` u otro escalar definido por el proyecto; no lo envuelvas en un `Response` artificial. Un resultado estructurado sí justifica un contrato.
-- **Get**: `GetById` devuelve el `Response` del elemento y el único `GetAll` devuelve `PaginatedResponse` con esos mismos elementos y metadatos de paginación. Ambos contratos existen siempre para una entidad expuesta.
+- **Get**: `GetById` devuelve el `Response` del elemento y el único `GetAll` ordinario devuelve `Production.Application.Models.PaginatedResponse<Response>`. El contrato del elemento permanece en la slice; no declares un wrapper paginado local. `Planificacion` conserva su respuesta propia porque incluye `resume` en la raíz.
 - **Update/Delete**: si no devuelven datos, retorna `Task` y el controller puede responder `204 No Content`; no crees un response vacío.
 - **Transiciones**: no crees un `Response` solo para indicar éxito si la operación no retorna datos; respeta el contrato HTTP establecido.
 
@@ -32,28 +32,24 @@ public sealed record ResponseUsuario
     public required string Nombre { get; init; }
 }
 
-public sealed record PaginatedResponse
-{
-    public required int TotalCount { get; init; }
-    public required int TotalPages { get; init; }
-    public required IReadOnlyList<Response> Items { get; init; }
-}
 ```
 
-Si el proyecto ya ofrece un wrapper genérico de paginación, úsalo en vez de duplicar `PaginatedResponse`. La API puede declarar un status code aunque Application retorne un escalar o nada.
+Application proporciona `Production.Application.Models.PaginatedResponse<T>`, con `TotalCount`, `TotalPages` e `Items` requeridos. Los handlers ordinarios retornan ese tipo concreto y construyen el resultado mediante `PaginatedResponseFactory`; no retornan `IPaginatedResponse<T>` ni declaran otra clase envolvente. La API puede declarar un status code aunque Application retorne un escalar o nada.
 
 ## Estructura y naming
 
 - La forma pública corresponde a la estructura de la entidad y al contrato acordado: conserva `Cliente`, `CreadoPorUsuario`, `PerfilTecnico`, etc. como objetos si son relaciones/objetos anidados, no como pares planos de ID y nombre inventados para esa respuesta. Solo expón los campos autorizados; la entidad no se serializa directamente.
-- Limita el `Response` de Get a la entidad y sus referencias superiores; `Cotizacion` puede incluir `ResponseCliente`, pero nunca una colección de `ProductoCotizacion`. Los hijos se leen desde su propio GetById/GetAll paginado. `PaginatedResponse.Items` es una página, no la colección completa.
+- Limita el `Response` de Get a la entidad y sus referencias superiores; `Cotizacion` puede incluir `ResponseCliente`, pero nunca una colección de `ProductoCotizacion`. Los hijos se leen desde su propio GetById/GetAll. `PaginatedResponse<T>.Items` contiene la página cuando se envía la pareja de paginación y todos los resultados coincidentes cuando se omite.
 - Para clases componentes del `Response` base usa **sufijo de concepto**: `ResponseUsuario`, `ResponseCliente`, `ResponsePerfilTecnico`; las declaraciones son top-level en el archivo de la slice o en uno propio si son sustanciales.
-- Para una **alternativa del resultado base** usa **prefijo de variante**: `PaginatedResponse`, `SummaryResponse`. No uses `ResponsePaginated`/`ResponseSummary` para variantes ni `UsuarioResponse` para componentes del base. GetById y GetAll de la misma entidad comparten siempre `Response`; no compartas un Response entre módulos de entidades distintas.
+- Para otras **alternativas del resultado base** usa **prefijo de variante**: `SummaryResponse`. La paginación ordinaria ya tiene el wrapper global `PaginatedResponse<T>`; no crees una variante local. No uses `ResponsePaginated`/`ResponseSummary` para variantes ni `UsuarioResponse` para componentes del base. GetById y GetAll de la misma entidad comparten siempre el `Response` del elemento; no compartas un Response entre módulos de entidades distintas.
 - Un objeto relacionado opcional se representa como nullable y ausente cuando la relación no existe; no crees un usuario/cliente vacío para ocultarlo. Los `Response` no llevan valores por defecto para simular datos válidos.
 
 ## Decisiones importantes
 
 - Trata nombres y tipos como parte del contrato OpenAPI/JSON; cualquier cambio puede afectar consumidores.
+- Los schemas OpenAPI ordinarios usan el tipo genérico concreto y sus IDs genéricos. Cuando cambie un contrato público, regenera los consumidores Orval según las instrucciones del proyecto.
+- Mantén `Planificacion` en su contrato propio con `resume` en la raíz; no la conviertas al wrapper genérico.
 - No pongas valores por defecto para ocultar datos que el handler debería proporcionar.
 - Mantén fuera del response entidades EF, navegación lazy, tipos de infraestructura y detalles internos de paginación.
-- Decide y documenta cómo se representa una página vacía y el total de páginas, siguiendo el contrato existente.
+- Decide y documenta cómo se representa una respuesta vacía y el total de páginas, siguiendo el contrato existente: con pareja ausente, `totalPages` es `0` sin resultados y `1` cuando hay resultados.
 - Distingue `CreatedAtRoute`/201 para Create de `NoContent`/204 para Update/Delete según el contrato HTTP local; el controller decide el status, no un `Response` de Application.

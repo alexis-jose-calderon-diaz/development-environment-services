@@ -22,7 +22,7 @@ services.AddScoped<IValidator<Get.Request>, Get.Validator>();
 services.AddScoped<IValidator<Update.Request>, Update.Validator>();
 ```
 
-Omite líneas de validators solo en slices sin Request ni reglas de entrada (por ejemplo, Delete con solo un ID). Adapta namespaces y duraciones (`Scoped`, `Transient`, etc.) a la composición existente. Si introduces un módulo nuevo, revisa también el registro global de features.
+Omite el registro del validator cuando la slice no tenga `Request` o cuando su `Request` no tenga reglas de entrada (por ejemplo, una operación ID-only o un `Request` requerido por el contrato que no tenga restricciones). Omitir el validator no elimina el `Request` exigido por los datos de negocio. Adapta namespaces y duraciones (`Scoped`, `Transient`, etc.) a la composición existente. Si introduces un módulo nuevo, revisa también el registro global de features.
 
 ## Decisiones importantes
 

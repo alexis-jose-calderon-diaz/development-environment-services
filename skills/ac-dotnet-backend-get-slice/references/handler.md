@@ -8,15 +8,15 @@ Coordina el caso de uso de su slice. Cada handler pertenece a una operación/cap
 
 Incluye un `Handler.cs` por slice de código del módulo propietario de cada entidad; no agrupes todo el CRUD en una clase ni traslades operaciones de una entidad hija al handler del padre.
 
-- **Create**: recibe el `Request` compuesto, valida, construye/agrega la entidad o invoca el agregado y persiste; retorna directamente el ID cuando esa es la convención. Si crea un snapshot de otra entidad, consulta el origen mediante modelos `Data` y proyecciones propios de Create, y construye entidades nuevas.
-- **Get**: siempre contiene `Handle(id, cancellationToken)` y `Handle(request, cancellationToken)` para `GetById` y el único `GetAll` paginado. Ambos usan la misma proyección, transformación y respuesta de elemento; adapta la proyección para cubrir el contrato compartido, no crees otro Get para ese listado.
-- **Update**: recibe el ID aparte y un `Request` con los campos editables cuando la entrada sea compuesta; carga el estado necesario, aplica invariantes y persiste.
-- **Delete**: recibe directamente el ID cuando no hay otra entrada; ejecuta borrado físico o lógico según el dominio y traduce conflictos de negocio conforme al proyecto.
-- **Operación especializada**: modela una transición (`Liberar`, `Anular`, `UpdateEstado`, etc.) en su propia slice; valida rol, propietario y estado, registra actor/instante cuando corresponda y no la disfraza de Update/Delete genérico.
+- **Create**: recibe un `Request` con todos los datos de negocio, aunque tenga una sola propiedad; valida, construye/agrega la entidad o invoca el agregado y persiste; retorna directamente el ID cuando esa es la convención. Si crea un snapshot de otra entidad, consulta el origen mediante modelos `Data` y proyecciones propios de Create, y construye entidades nuevas.
+- **Get**: siempre contiene `Handle(id, cancellationToken)` y `Handle(request, cancellationToken)` para `GetById` y el único `GetAll`. Ambos usan la misma proyección, transformación y respuesta de elemento. El `Request` admite búsqueda opcional y una pareja opcional de paginación; no crees otro Get para devolver el conjunto completo.
+- **Update**: recibe el ID principal aparte y un `Request` con todos los campos editables, incluso si solo hay uno; carga el estado necesario, aplica invariantes y persiste.
+- **Delete**: recibe directamente el ID si es su único dato de negocio; si requiere cualquier otro dato, lo recibe en `Request`. Ejecuta borrado físico o lógico según el dominio y traduce conflictos de negocio conforme al proyecto.
+- **Operación especializada**: modela una transición (`Liberar`, `Anular`, `UpdateEstado`, etc.) en su propia slice; recibe el ID principal separado y un `Request` para cualquier dato adicional, como el motivo o estado, incluso si es un único escalar. Valida rol, propietario y estado, registra actor/instante cuando corresponda y no la disfraza de Update/Delete genérico.
 
 ## Ejemplo
 
-El ejemplo siguiente se concentra en la slice `Get` de la entidad `ProductEntity`. Usa un puerto `IAppDbContext`, EF Core y `PageSize` entero positivo y finito validado por FluentValidation; sustituye los nombres por los del proyecto. Las demás variantes se muestran después.
+El ejemplo siguiente se concentra en la slice `Get` de la entidad `ProductEntity`. Usa un puerto `IAppDbContext`, EF Core, el enum `PageSize` del proyecto y el contrato de retorno `Production.Application.Models.PaginatedResponse<Response>`, construido con `PaginatedResponseFactory`. La búsqueda es opcional y el handler omite su filtro cuando está ausente o vacío. Las demás variantes se muestran después.
 
 ```csharp
 public sealed class Handler(
@@ -36,7 +36,7 @@ public sealed class Handler(
         return data.ToResponse();
     }
 
-    public async Task<PaginatedResponse> Handle(
+    public async Task<PaginatedResponse<Response>> Handle(
         Request request,
         CancellationToken cancellationToken
     )
@@ -56,24 +56,23 @@ public sealed class Handler(
         }
 
         int totalCount = await query.CountAsync(cancellationToken);
-        int offset = checked((request.Page - 1) * request.PageSize);
+        query = query.OrderBy(product => product.Name).ThenBy(product => product.Id);
+
+        if (request.Page is int page && request.PageSize is PageSize pageSize)
+        {
+            int offset = checked((page - 1) * (int)pageSize);
+            query = query.Skip(offset).Take((int)pageSize);
+        }
 
         List<Data> rows = await query
-            .OrderBy(product => product.Name)
-            .ThenBy(product => product.Id)
-            .Skip(offset)
-            .Take(request.PageSize)
             .Select(Projections.ToData)
             .ToListAsync(cancellationToken);
 
-        int totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
-
-        return new PaginatedResponse
-        {
-            TotalCount = totalCount,
-            TotalPages = totalPages,
-            Items = rows.ConvertAll(row => row.ToResponse()),
-        };
+        return PaginatedResponseFactory.Create(
+            totalCount,
+            (int?)request.PageSize,
+            rows.ConvertAll(row => row.ToResponse())
+        );
     }
 }
 ```
@@ -105,7 +104,7 @@ public async Task Handle(int id, Request request, CancellationToken cancellation
     await dbContext.SaveChangesAsync(cancellationToken);
 }
 
-// Delete/Handler.cs: sin Request artificial cuando solo recibe un ID.
+// Delete/Handler.cs: sin Request cuando el ID principal es el único dato de negocio.
 public async Task Handle(int id, CancellationToken cancellationToken)
 {
     ProductEntity product = await dbContext.Products
@@ -114,19 +113,27 @@ public async Task Handle(int id, CancellationToken cancellationToken)
     dbContext.Products.Remove(product);
     await dbContext.SaveChangesAsync(cancellationToken);
 }
+
+// Annul/Handler.cs: el motivo es una propiedad de Request, no un argumento escalar.
+public async Task Handle(int id, Request request, CancellationToken cancellationToken)
+{
+    await validator.ValidateAndThrowAsync(request, cancellationToken);
+    // Cargar la entidad y aplicar la transición usando request.Motivo.
+}
 ```
 
 Los fragmentos son esquemáticos: adapta la construcción de entidades, mutaciones, borrado lógico/físico, transacciones y manejo de conflictos a las reglas del dominio.
 
 ## Decisiones importantes
 
+- Todo dato de negocio distinto del ID principal se recibe dentro de un único `Request`, incluso si es un escalar o un ID relacionado. Solo las operaciones ID-only omiten el `Request`; `CancellationToken` permanece como parámetro técnico final.
 - En el único `GetAll` paginado de la entidad, aplica autorización y alcance por usuario antes de filtrar y contar: no reveles datos ajenos ni siquiera en los totales. En `GetById`, filtra por propietario antes de buscar cuando la lectura ajena deba responder `404`.
-- `Search` es obligatorio pero admite `""` (sin filtro textual); aplica los demás filtros solo si tienen valor. Un filtro adicional ausente o `null` no debe limitar la consulta.
+- `Search` es opcional; si está ausente, `null` o vacío, no aplica filtro textual. En el handler usa `!string.IsNullOrEmpty(request.Search)` antes de agregar el predicado. Los demás filtros opcionales solo restringen la consulta cuando tienen valor.
 - Filtra antes de contar y calcula `TotalCount` antes de `Skip`/`Take`. Usa un orden estable con desempate único (`OrderBy(...).ThenBy(...)`); un segundo `OrderBy` reemplaza el anterior.
 - Propaga `CancellationToken` a EF Core y a validaciones asíncronas.
-- Mantén la consulta como `IQueryable` hasta completar filtros, orden, paginación y proyección.
+- Mantén la consulta como `IQueryable` hasta completar filtros, orden y proyección; aplica `Skip`/`Take` solo cuando `Page` y `PageSize` estén presentes.
 - Define cómo tratar un ID inexistente en Get/Update/Delete según el contrato del proyecto; no devuelvas éxito por accidente.
-- Toda consulta de listado requiere `Page` y `PageSize` positivos y aplica `Skip` y `Take`; si el tipo `PageSize` ofrece `ALL`, rechaza esa opción para esta operación en FluentValidation. Nunca devuelvas la colección completa como alternativa.
+- `Page` y `PageSize` son una pareja nullable opcional: omitir ambas devuelve todos los resultados coincidentes en el mismo listado; una pareja parcial se rechaza con FluentValidation. Cuando ambas están presentes, valida la página y que `PageSize` pertenezca al enum vigente, y aplica `Skip`/`Take`.
 - Proyecta únicamente la entidad del módulo y sus referencias hacia entidades superiores; no incluyas colecciones hijas en `GetById` ni en los items del listado. Las entidades hijas disponen de su propio módulo Get, también paginado.
 - Si el proveedor de EF Core no puede traducir un filtro o método, revisa la traducción y el SQL; no materialices toda la tabla para aplicar el filtro en memoria.
 - Propaga `CancellationToken` como último parámetro en todas las operaciones asíncronas y pásalo a persistencia/servicios compatibles.
