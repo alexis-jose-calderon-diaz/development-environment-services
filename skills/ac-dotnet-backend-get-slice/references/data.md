@@ -28,10 +28,10 @@ internal sealed record DataUsuario
 
 ## Decisiones importantes
 
-- Declara únicamente campos que la respuesta o su transformación necesitan.
-- Parte de la estructura de la entidad consultada: agrupa una relación como `DataUsuario` en vez de multiplicar campos planos `UsuarioId`/`UsuarioNombre` si el contrato requiere un usuario anidado. Mantén null en relaciones opcionales y no crees objetos ficticios para relaciones ausentes.
+- Declara únicamente campos que la respuesta o su transformación necesitan; no copies la entidad completa por simetría.
+- Conserva la jerarquía y los nombres de propiedades de entidad de origen para las relaciones incluidas, también si una asociación es indirecta. Por ejemplo, si `SolicitudCotizacionEntity` declara `ComercialUsuario`, `Data` conserva la propiedad `ComercialUsuario` y puede usar `DataUsuario` como tipo; no aplana la relación en `UsuarioId`/`UsuarioNombre` ni la duplica por comodidad. Mantén null en relaciones opcionales y no crees objetos ficticios para relaciones ausentes.
 - En Get incluye solo escalares/objetos de valor de la entidad y propiedades de referencias superiores (`ProductoCotizacion` → `Cotizacion`, `Cotizacion` → `Cliente`). Nunca incluyas en `Cotizacion/Get/Data` una colección de `ProductoCotizacion`: esa entidad tiene su propio Get, con GetById y listado paginado.
-- Los tipos auxiliares del dato base usan el nombre `Data` como prefijo y el concepto como sufijo (`DataUsuario`, `DataCliente`, `DataPerfilTecnico`), top-level y locales a su slice. GetById y GetAll comparten siempre la proyección de Get; no compartas `Data` entre slices distintas.
+- Los tipos auxiliares de entidad usan el nombre `Data` como prefijo y el nombre de la entidad real como sufijo (`DataUsuario`, `DataCliente`), no el de la navegación; son top-level y locales a su slice. Los tipos para objetos de valor conservan el concepto de dominio (`DataPerfilTecnico`). GetById y GetAll comparten siempre la proyección de Get; no compartas `Data` entre slices distintas.
 - Mantén el tipo interno de Application y evita atributos de serialización, binding o MVC.
 - Usa tipos compatibles con la traducción de la proyección a SQL.
 - No agregues valores centinela ni defaults para ocultar datos faltantes; resuelve esa semántica en el dominio o en la transformación correspondiente.

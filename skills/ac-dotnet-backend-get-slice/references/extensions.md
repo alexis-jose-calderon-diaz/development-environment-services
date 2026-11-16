@@ -37,7 +37,7 @@ La sintaxis de extension blocks requiere C# 14. Comprueba el TFM y `LangVersion`
 ## Decisiones importantes
 
 - Ejecuta aquí los cálculos y formatos que EF Core no puede traducir, una vez que `Data` está materializado.
-- En Get conserva la misma forma anidada para relaciones como `DataUsuario` → `ResponseUsuario`, respetando relaciones opcionales; no aplanes campos para simplificar el mapeo.
+- En Get conserva la jerarquía y los nombres de propiedades de origen de las relaciones incluidas, también si son indirectas. Un miembro `ComercialUsuario` proyectado como `DataUsuario` se convierte a `ResponseUsuario` manteniendo la propiedad `ComercialUsuario`; no aplanes ni dupliques campos para simplificar el mapeo. Copia solo los campos necesarios y respeta relaciones opcionales.
 - No transformes colecciones hijas en `Get/Extensions.cs` del padre: cada hijo tiene su propio `Data`, `Response` y Get paginado en su módulo.
 - En un snapshot de Create, usa métodos explícitos como `ToCotizacionEntity(...)` y `ToProductoCotizacionEntity(...)` sobre datos locales de Create; recibe como parámetros el ID/actor/instante UTC que no vienen del origen y construye nuevas instancias de objetos anidados.
 - No consultes servicios ni bases de datos desde la conversión.

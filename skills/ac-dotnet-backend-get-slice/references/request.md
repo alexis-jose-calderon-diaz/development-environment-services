@@ -2,7 +2,7 @@
 
 ## Responsabilidad
 
-Describe los datos de negocio de entrada de una operación de Application. Cada `Request` vive junto a su slice y agrupa todos esos datos salvo el ID de la entidad principal, incluso cuando solo haya una propiedad escalar. Sus propiedades y su anidamiento deben corresponder al modelo de la entidad de origen y a los campos editables del caso de uso, sin copiar propiedades no autorizadas.
+Describe los datos de negocio de entrada de una operación de Application. Cada `Request` vive junto a su slice y agrupa todos esos datos salvo el ID de la entidad principal, incluso cuando solo haya una propiedad escalar. Como cualquier objeto de transporte que represente datos de entidades, incluye solo los campos editables necesarios y conserva nombres y jerarquía de los miembros de origen que representa, sin copiar propiedades no autorizadas.
 
 ## Cuándo incluirlo
 
@@ -113,8 +113,8 @@ Aplica estas reglas a cada `Request` que tenga restricciones; no agregues Reques
 
 ## Asociaciones y nombres de tipos
 
-- Respeta la estructura de la entidad que representa la entrada: un objeto de valor/perfil técnico anidado sigue anidado como `PerfilTecnico`; un usuario relacionado no se convierte automáticamente en campos planos `UsuarioId`/`UsuarioNombre` si el contrato exige un objeto usuario.
-- Nombra los tipos auxiliares asociados con sufijo del concepto: `RequestUsuario`, `RequestPerfilTecnico`. Por ejemplo, un `Request` puede declarar `public required RequestPerfilTecnico PerfilTecnico { get; init; } = null!;`. No anides declaraciones de clases dentro de `Request`; los tipos siguen siendo top-level en el archivo apropiado y pueden ir en `Shared/` si realmente los comparten varias slices.
+- Respeta la jerarquía de objetos para las entidades y asociaciones que forman parte de la entrada, también cuando haya asociaciones indirectas. Conserva el nombre de la propiedad declarado por la entidad de origen; por ejemplo, si `SolicitudCotizacionEntity` declara `ComercialUsuario`, la propiedad correspondiente sigue llamándose `ComercialUsuario`. No conviertas una asociación en campos planos `UsuarioId`/`UsuarioNombre` si la entrada la representa como un objeto.
+- Nombra los tipos auxiliares de entidad con el prefijo `Request` y el nombre de la entidad real representada, no con el nombre de la navegación: `ComercialUsuario` puede ser de tipo `RequestUsuario`, no `RequestComercialUsuario`. Incluye en cada auxiliar solo los campos requeridos por la operación. Los tipos son top-level y locales a la slice; no anides declaraciones de clases dentro de `Request`. Para objetos de valor que no sean entidades, conserva el nombre del concepto correspondiente, como `RequestPerfilTecnico`.
 - Si un campo anidado es obligatorio, admite `""` pero rechaza `null`, no lo normalices a `string.Empty` al deserializar: conserva la nulabilidad en la entrada para detectar el nulo y valida no-nulo y longitud, sin exigir `NotEmpty`.
 - El `Request` solo incluye datos permitidos por la operación. En Update no aceptes IDs de asociaciones inmutables, trazas ni tokens internos de concurrencia como datos de negocio; solo el ID principal de la entidad va separado.
 

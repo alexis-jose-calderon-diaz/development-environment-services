@@ -37,12 +37,12 @@ internal static class Projections
 }
 ```
 
-La navegación `CreadoPorUsuario` del ejemplo solo representa el caso en que esa relación existe en la entidad; no agregues relaciones ficticias para copiarlo.
+La navegación del ejemplo solo representa el caso en que esa relación existe en la entidad; no agregues relaciones ficticias para copiarlo. Conserva el nombre que declara el origen para cada propiedad representada: si `SolicitudCotizacionEntity` declara `ComercialUsuario`, la propiedad proyectada en `Data` se llama `ComercialUsuario` y su tipo auxiliar puede ser `DataUsuario`, según los campos que requiera el propósito.
 
 ## Decisiones importantes
 
 - Conserva el tipo `Expression<Func<TEntity, Data>>` cuando EF Core debe traducirla a SQL; una función `Func` ejecutada en memoria no es equivalente.
-- Respeta relaciones y nullabilidad del modelo original al proyectar; un usuario/cliente relacionado requerido o opcional no se aplana si el contrato lo representa anidado. Para objetos opcionales, proyecta `null` explícitamente cuando falte la navegación.
+- Respeta la jerarquía y los nombres de las propiedades de origen para las relaciones incluidas, también a través de asociaciones indirectas; no aplanes ni dupliques miembros por comodidad. Proyecta solo los campos que necesita el `Data` de destino. Un usuario/cliente relacionado requerido u opcional no se aplana si el contrato lo representa anidado; para objetos opcionales, proyecta `null` explícitamente cuando falte la navegación.
 - En Get solo navega desde la entidad a sus referencias superiores (`Cotizacion` → `Cliente`, por ejemplo); nunca proyectes colecciones hijas (`Cotizacion` → `ProductosCotizacion`). El Get de la entidad hija es el dueño de su consulta, sin reutilizar `ToData` del padre.
 - Proyecta directamente los campos requeridos; no uses `Include`/`ThenInclude` para una consulta que puede expresarse mediante `Select`.
 - Mantén la proyección pura y traducible. Coloca cálculos o formatos no traducibles después de materializar, en la conversión correspondiente.

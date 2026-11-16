@@ -20,11 +20,23 @@ Ayuda a implementar y explicar slices de backend .NET, desde los casos de uso ha
 - No cubre ningún tipo de pruebas: no propongas ni añadas guías, casos o archivos de pruebas desde esta skill. La compilación y demás verificaciones no basadas en pruebas siguen las instrucciones del repositorio.
 - No infieras reglas de negocio para crear, actualizar o eliminar. Conserva las invariantes del dominio, el tratamiento de not-found y el comportamiento de borrado existentes.
 
+## Forma y nombres de objetos de transporte de entidades
+
+Esta convención aplica de forma transversal a cualquier contrato u objeto de transporte que represente, contenga o proyecte datos de entidades, directa o indirectamente; `Request`, `Data`, `Model` y `Response` son ejemplos, no una lista exhaustiva.
+
+- Cada objeto incluye solo los campos necesarios para su propósito. No copies todos los campos de una entidad por simetría.
+- En los miembros que representan entidades o sus relaciones, conserva la jerarquía de objetos y las asociaciones anidadas que requiere el propósito, incluso cuando una asociación sea indirecta. No aplanes ni dupliques propiedades por comodidad.
+- Conserva el nombre declarado en la entidad de origen para cada miembro que la representa, incluidas las propiedades de navegación. Por ejemplo, si `SolicitudCotizacionEntity` declara `ComercialUsuario`, la propiedad se llama `ComercialUsuario`.
+- Nombra cada tipo auxiliar top-level con el prefijo del tipo de transporte principal y el nombre de la entidad real representada, no el nombre de la navegación. Así, el miembro `ComercialUsuario` puede tener tipo `DataUsuario` o `ModelUsuario`, no `DataComercialUsuario`. Los auxiliares son locales a su slice; solo se comparten cuando comparten intencionalmente el mismo contrato.
+- Aplica la misma convención a cualquier otro tipo de transporte, sustituyendo el prefijo por el nombre de su tipo principal: por ejemplo, `RequestUsuario`, `DataCliente`, `ModelUsuario` o `ResponseCliente`.
+- Las propiedades propias de una operación o de presentación que no representen miembros de entidades pueden conservar nombres semánticos. No inventes entidades ni propiedades para forzar la correspondencia.
+- Estas reglas no sustituyen las restricciones propias de cada tipo: `Data` conserva sus requisitos de proyección EF, `Request`/`Response` sus contratos y `Model` el formato de presentación de la plantilla. En Get se mantienen solo la entidad consultada y sus referencias hacia arriba; nunca se incluyen colecciones hijas.
+
 ## Flujo de trabajo
 
 1. Lee instrucciones, TFM/versión de C#, specs del cambio y slices vecinas. Identifica entidades de origen, relaciones, contratos, persistencia, validación, rutas, seguridad y DI. Si spec y código no coinciden, no conviertas la discrepancia en convención: aclara cuál manda.
 2. Delimita las operaciones y sus resultados: creación, consultas, mutaciones, borrado o transiciones. Fija roles, alcance por propietario, estados permitidos, efectos y códigos HTTP a partir del requisito, sin inventarlos.
-3. Diseña `Request`, `Data` y `Response` a partir de la estructura original de la entidad: preserva sus objetos de valor y, en Get, solo las asociaciones hacia entidades superiores; distingue relaciones requeridas y opcionales sin aplanar o duplicar propiedades por comodidad. Para tipos auxiliares anidados usa `RequestUsuario`, `DataUsuario`, `ResponseUsuario`; en listados ordinarios reutiliza `Production.Application.Models.PaginatedResponse<T>` y `PaginatedResponseFactory`, manteniendo `Response` específico del elemento. `Planificacion` conserva su respuesta propia.
+3. Diseña todos los objetos de transporte que representen datos de entidades conforme a [Forma y nombres de objetos de transporte de entidades](#forma-y-nombres-de-objetos-de-transporte-de-entidades), además de las guías por tipo. En Get conserva solo las asociaciones hacia entidades superiores. Para listados ordinarios reutiliza `Production.Application.Models.PaginatedResponse<T>` y `PaginatedResponseFactory`, manteniendo `Response` específico del elemento. `Planificacion` conserva su respuesta propia.
 4. Nombra **todos** los miembros de enums en `UPPER_SNAKE_CASE` (`PENDIENTE`, `EN_ANALISIS`); conserva sus valores numéricos y revisa referencias, defaults, persistencia y serialización si se renombra un enum existente. No presupongas que el nombre JSON anterior es equivalente al nuevo.
 5. Implementa **todas** las reglas de validación del `Request` con FluentValidation (incluidas longitud, rango, pertenencia a enum y consistencia entre campos). Añade DataAnnotations solo cuando una anotación estándar aporte al schema OpenAPI; toda restricción declarada con DataAnnotations debe tener regla equivalente en FluentValidation, que puede incluir reglas adicionales sin DataAnnotations. Nunca dependas solo de DataAnnotations para validar Application. Si el `Request` requerido por el contrato no tiene restricciones, omite el `Validator` vacío, no el `Request`. `Search` es opcional y una cadena nula/vacía no filtra; `Page` y `PageSize` son opcionales, deben venir juntas y, cuando tienen valor, representar una página válida.
 6. Organiza cada entidad en su módulo, sin acoplar los casos de uso de sus hijos. En su única slice `Get`, implementa siempre `GetById` y `GetAll` con el mismo `Data`, `Projections.ToData`, `Extensions.ToResponse` y `Response`; filtra por permisos y opciones nullable, ordena y, si la pareja de paginación está presente, pagina antes de materializar.
@@ -42,6 +54,7 @@ Consulta las guías por tipo de archivo. Cada una indica en qué slices aplica y
 | Request de entrada         | [request.md](references/request.md)                         |
 | Validación de entrada      | [validator.md](references/validator.md)                     |
 | Modelo interno o snapshot  | [data.md](references/data.md)                               |
+| Modelo de presentación     | [model.md](references/model.md)                             |
 | Resultados y contratos     | [response.md](references/response.md)                       |
 | Proyecciones EF            | [projections.md](references/projections.md)                 |
 | Conversión y copia         | [extensions.md](references/extensions.md)                   |
