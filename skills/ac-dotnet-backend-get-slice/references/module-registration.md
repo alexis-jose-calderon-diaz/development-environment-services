@@ -2,11 +2,11 @@
 
 ## Responsabilidad
 
-Integra handlers y validators de las slices de **una sola entidad** en el contenedor DI del módulo. El registro permite resolver dependencias sin acoplar casos de uso de entidades distintas ni convertir el módulo en lógica de negocio.
+Integra los handlers de las slices de **una sola entidad** en el contenedor DI del módulo. La extensión compartida `request.Validate()` no requiere registro; las reglas declarativas pertenecen al `Request` y las ejecuta el handler de Application.
 
 ## Cuándo incluirlo
 
-Actualiza el registro del módulo cuando el proyecto lo haga explícitamente. Cada entidad de negocio expuesta tiene su propio `Module.cs` con un `Get.Handler` para GetById/GetAll y un `IValidator<Get.Request>` para el listado paginado (GetById recibe un ID, no un Request). Registra handlers de mutación solo si esas operaciones se solicitaron y los validators de todos sus Requests con reglas; DataAnnotations no reemplaza ni vuelve innecesarios estos validators. Si hay escaneo automático, no dupliques registros. Al añadir una entidad nueva, crea su módulo propio y conéctalo al registro global; no incluyas sus slices en el módulo de la entidad padre.
+Actualiza el registro del módulo cuando el proyecto lo haga explícitamente. Cada entidad de negocio expuesta tiene su propio `Module.cs` con un `Get.Handler` para GetById/GetAll (GetById recibe un ID, no un Request). Registra handlers de mutación solo si esas operaciones se solicitaron. No registres validators de Requests por DI como patrón para funcionalidad nueva; si hay escaneo automático, no dupliques registros de handlers. Al añadir una entidad nueva, crea su módulo propio y conéctalo al registro global; no incluyas sus slices en el módulo de la entidad padre.
 
 ## Ejemplo
 
@@ -17,19 +17,20 @@ services.AddScoped<Get.Handler>();
 services.AddScoped<Create.Handler>();
 services.AddScoped<Update.Handler>();
 services.AddScoped<Delete.Handler>();
-services.AddScoped<IValidator<Create.Request>, Create.Validator>();
-services.AddScoped<IValidator<Get.Request>, Get.Validator>();
-services.AddScoped<IValidator<Update.Request>, Update.Validator>();
 ```
 
-Omite el registro del validator cuando la slice no tenga `Request` o cuando su `Request` no tenga reglas de entrada (por ejemplo, una operación ID-only o un `Request` requerido por el contrato que no tenga restricciones). Omitir el validator no elimina el `Request` exigido por los datos de negocio. Adapta namespaces y duraciones (`Scoped`, `Transient`, etc.) a la composición existente. Si introduces un módulo nuevo, revisa también el registro global de features.
+Adapta namespaces y duraciones (`Scoped`, `Transient`, etc.) a la composición existente. Si introduces un módulo nuevo, revisa también el registro global de features.
 
 ## Decisiones importantes
 
-- Registra el handler y validator en el módulo propietario de la slice; evita un contenedor paralelo o un service locator.
-- No registres validators inexistentes ni dupliques registros ya cubiertos por escaneo.
+- Registra cada handler en el módulo propietario de la slice; evita un contenedor paralelo o un service locator.
+- No registres la extensión ni los atributos de Data Annotations en DI.
 - Mantén el módulo limitado a composición DI; las rutas HTTP se descubren por el mecanismo del host, no por enumeración manual, salvo que la solución indique lo contrario.
 - Este archivo es integración del backend, no parte de la lógica de negocio de las slices. Omítelo si el registro automático ya cubre los tipos.
-- `GetById` y el único `GetAll` paginado comparten siempre `Get.Handler` y el contrato de elemento; registra un solo handler y el validator de `Get.Request`.
+- `GetById` y el único `GetAll` paginado comparten siempre `Get.Handler` y el contrato de elemento; registra un solo handler.
 - `Cotizacion` y `ProductoCotizacion` se registran en módulos distintos. Una lectura del padre puede proyectar datos de una referencia superior como `Cliente`, pero no ejecuta handlers del hijo ni publica su listado bajo el módulo padre.
-- Una entrada anidada reutilizada entre Create y Update puede justificar un validator compartido dentro del módulo (`IValidator<RequestPerfilTecnico>`, por ejemplo); regístralo solo si ambas slices usan ese contrato. Aprovecha los puertos de tiempo/usuario ya registrados por el host, no crees dobles registros por handler.
+- Una entrada anidada reutilizada entre Create y Update conserva un contrato compartido cuando ambas slices lo usan; valida sus miembros explícitamente según [validator.md](validator.md). Aprovecha los puertos de tiempo/usuario ya registrados por el host, no crees dobles registros por handler.
+
+### Transición heredada
+
+El runtime actual todavía registra validators FluentValidation para slices existentes. Consérvalos hasta una migración coordinada; no añadas nuevos registros ni los retires parcialmente como parte de una slice ordinaria.

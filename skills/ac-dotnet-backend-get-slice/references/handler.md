@@ -19,9 +19,10 @@ Incluye un `Handler.cs` por slice de código del módulo propietario de cada ent
 El ejemplo siguiente se concentra en la slice `Get` de la entidad `ProductEntity`. Usa un puerto `IAppDbContext`, EF Core, el enum `PageSize` del proyecto y el contrato de retorno `Production.Application.Models.PaginatedResponse<Response>`, construido con `PaginatedResponseFactory`. La búsqueda es opcional y el handler omite su filtro cuando está ausente o vacío. Las demás variantes se muestran después.
 
 ```csharp
+using Production.Application.Features.Shared.Extensions;
+
 public sealed class Handler(
-    IAppDbContext dbContext,
-    IValidator<Request> validator
+    IAppDbContext dbContext
 )
 {
     public async Task<Response> Handle(int id, CancellationToken cancellationToken)
@@ -41,7 +42,7 @@ public sealed class Handler(
         CancellationToken cancellationToken
     )
     {
-        await validator.ValidateAndThrowAsync(request, cancellationToken);
+        request.Validate();
 
         IQueryable<ProductEntity> query = dbContext.Products.AsNoTracking();
 
@@ -83,7 +84,7 @@ public sealed class Handler(
 // Create/Handler.cs: resultado escalar directo; no crear Response para envolver el ID.
 public async Task<int> Handle(Request request, CancellationToken cancellationToken)
 {
-    await validator.ValidateAndThrowAsync(request, cancellationToken);
+    request.Validate();
     ProductEntity product = new()
     {
         Name = request.Name,
@@ -97,6 +98,7 @@ public async Task<int> Handle(Request request, CancellationToken cancellationTok
 // Update/Handler.cs: ID separado del payload de actualización.
 public async Task Handle(int id, Request request, CancellationToken cancellationToken)
 {
+    request.Validate();
     ProductEntity product = await dbContext.Products
         .SingleOrDefaultAsync(item => item.Id == id, cancellationToken)
         ?? throw new NotFoundException();
@@ -117,7 +119,7 @@ public async Task Handle(int id, CancellationToken cancellationToken)
 // Annul/Handler.cs: el motivo es una propiedad de Request, no un argumento escalar.
 public async Task Handle(int id, Request request, CancellationToken cancellationToken)
 {
-    await validator.ValidateAndThrowAsync(request, cancellationToken);
+    request.Validate();
     // Cargar la entidad y aplicar la transición usando request.Motivo.
 }
 ```
@@ -133,11 +135,11 @@ Los fragmentos son esquemáticos: adapta la construcción de entidades, mutacion
 - Propaga `CancellationToken` a EF Core y a validaciones asíncronas.
 - Mantén la consulta como `IQueryable` hasta completar filtros, orden y proyección; aplica `Skip`/`Take` solo cuando `Page` y `PageSize` estén presentes.
 - Define cómo tratar un ID inexistente en Get/Update/Delete según el contrato del proyecto; no devuelvas éxito por accidente.
-- `Page` y `PageSize` son una pareja nullable opcional: omitir ambas devuelve todos los resultados coincidentes en el mismo listado; una pareja parcial se rechaza con FluentValidation. Cuando ambas están presentes, valida la página y que `PageSize` pertenezca al enum vigente, y aplica `Skip`/`Take`.
+- `Page` y `PageSize` son una pareja nullable opcional: omitir ambas devuelve todos los resultados coincidentes en el mismo listado; una pareja parcial se rechaza mediante `IValidatableObject`. Cuando ambas están presentes, Data Annotations valida la página y la pertenencia de `PageSize` al enum vigente; el handler aplica `Skip`/`Take`.
 - Proyecta únicamente la entidad del módulo y sus referencias hacia entidades superiores; no incluyas colecciones hijas en `GetById` ni en los items del listado. Las entidades hijas disponen de su propio módulo Get, también paginado.
 - Si el proveedor de EF Core no puede traducir un filtro o método, revisa la traducción y el SQL; no materialices toda la tabla para aplicar el filtro en memoria.
 - Propaga `CancellationToken` como último parámetro en todas las operaciones asíncronas y pásalo a persistencia/servicios compatibles.
-- Ejecuta FluentValidation antes de efectos laterales; si el validator contiene reglas asíncronas, usa `ValidateAndThrowAsync` y propaga el token.
+- Llama `request.Validate()` antes de efectos laterales para centralizar la ejecución de atributos e `IValidatableObject`; no repitas la configuración de `Validator` en cada handler. Las reglas que consultan persistencia, permisos o servicios externos se resuelven aparte en Application con `CancellationToken`, antes de los efectos. Consulta [validator.md](validator.md) para validar objetos anidados y asociar sus errores.
 - No traslades invariantes del dominio al controller ni confíes en validaciones del cliente para protegerlas.
 - Para Create, una comprobación previa de duplicados no reemplaza la restricción única de la BD cuando corresponda; traduce conflictos concurrentes según el patrón existente.
 - Para Update/Delete, carga solo lo necesario. Si el dominio requiere estado o dependencias para validar la mutación, consulta ese estado explícitamente; no uses una proyección de lectura como entidad editable.

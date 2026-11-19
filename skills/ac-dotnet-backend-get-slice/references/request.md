@@ -21,10 +21,11 @@ No crees requests vacíos ni envelopes que solo contengan el ID principal. Un `R
 `Get/Request.cs` representa filtros opcionales y una pareja nullable de paginación. `Search` es opcional; su ausencia, `null` o cadena vacía se interpretan como una búsqueda sin filtro:
 
 ```csharp
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Production.Domain.Enums;
 
-public sealed record Request
+public sealed record Request : IValidatableObject
 {
     public bool? Active { get; init; }
 
@@ -40,10 +41,21 @@ public sealed record Request
 
     [EnumDataType(typeof(PageSize), ErrorMessage = "El tamaño de página no es válido.")]
     public PageSize? PageSize { get; init; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Page.HasValue != PageSize.HasValue)
+        {
+            yield return new ValidationResult(
+                "Los parámetros de página y tamaño deben especificarse juntos.",
+                new[] { nameof(Page), nameof(PageSize) }
+            );
+        }
+    }
 }
 ```
 
-`Search` ausente o vacío no aplica filtro textual; el handler lo omite con `!string.IsNullOrEmpty(request.Search)`. `Page` y `PageSize` se omiten juntos para solicitar todos los resultados coincidentes. Si solo se proporciona uno, FluentValidation rechaza la pareja inconsistente con `400`; si ambos están presentes, se valida la página y la pertenencia de `PageSize` al enum del proyecto, y se aplica la paginación. OpenAPI los documenta como opcionales y nullable.
+`Search` ausente o vacío no aplica filtro textual; el handler lo omite con `!string.IsNullOrEmpty(request.Search)`. `Page` y `PageSize` se omiten juntos para solicitar todos los resultados coincidentes. Si solo se proporciona uno, `IValidatableObject` rechaza la pareja inconsistente y asocia el error a ambas propiedades; si ambos están presentes, sus Data Annotations validan la página y la pertenencia de `PageSize` al enum. OpenAPI los documenta como opcionales y nullable. El handler llama `request.Validate()` antes de procesar la consulta.
 
 `Update/Request.cs` tiene el mismo nombre simple dentro del namespace de su slice y solo contiene campos editables:
 
@@ -53,7 +65,8 @@ using System.ComponentModel.DataAnnotations;
 public sealed record Request
 {
     [Required(ErrorMessage = "El nombre es obligatorio.")]
-    [StringLength(45, MinimumLength = 4)]
+    [MinLength(4)]
+    [MaxLength(45)]
     public required string Name
     {
         get;
@@ -83,9 +96,9 @@ public sealed record Request
 
 `Create/Request.cs` sigue el mismo principio, con los campos requeridos para crear. Si el proyecto asigna defaults o usa un enum de page size, conserva su semántica.
 
-## DataAnnotations para OpenAPI y MVC
+## Data Annotations en el contrato
 
-Agrega a las propiedades del `Request` DataAnnotations estándar solo cuando describan una restricción útil para el schema OpenAPI (presencia, longitud, rango, formato o pertenencia a enum). **Toda restricción declarada con DataAnnotations debe repetirse en FluentValidation**, con límites y semántica equivalentes, para que Application la valide sin depender del binding HTTP. FluentValidation puede incluir reglas adicionales que no tengan una DataAnnotation equivalente.
+Usa Data Annotations nativas para declarar las restricciones de propiedad del contrato (presencia, longitud, rango, formato y metadata de enum); el schema OpenAPI debe reflejar las que admite. Las reglas condicionales o entre propiedades pertenecen a `IValidatableObject`. No dupliques una regla en otro mecanismo. MVC las ejecuta al enlazar el modelo y Application vuelve a validar el mismo Request con `request.Validate()` porque el caso de uso puede invocarse sin HTTP.
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -93,8 +106,8 @@ using System.ComponentModel.DataAnnotations;
 public sealed record Request
 {
     [Required(ErrorMessage = "El nombre es obligatorio.")]
-    [StringLength(45, MinimumLength = 4,
-        ErrorMessage = "El nombre debe tener entre 4 y 45 caracteres.")]
+    [MinLength(4, ErrorMessage = "El nombre debe tener al menos 4 caracteres.")]
+    [MaxLength(45, ErrorMessage = "El nombre no puede exceder los 45 caracteres.")]
     public required string Name
     {
         get;
@@ -109,7 +122,7 @@ public sealed record Request
 }
 ```
 
-Aplica estas reglas a cada `Request` que tenga restricciones; no agregues Request a Delete si solo recibe el ID principal. En la pareja opcional, los atributos de rango y enum describen los valores cuando están presentes; FluentValidation debe validar la pertenencia de `PageSize` al enum y exigir que ambos campos tengan valor o que ambos sean `null`.
+Aplica estas reglas a cada `Request` que tenga restricciones; no agregues Request a Delete si solo recibe el ID principal. En la pareja opcional, los atributos de rango y enum describen los valores cuando están presentes; `IValidatableObject` exige que ambos campos tengan valor o que ambos sean `null`.
 
 ## Asociaciones y nombres de tipos
 
@@ -122,11 +135,11 @@ Aplica estas reglas a cada `Request` que tenga restricciones; no agregues Reques
 
 - `Search` es opcional y nullable; ausencia, `null` o vacío significa que no se aplica el filtro textual. El handler omite el filtro con `!string.IsNullOrEmpty(request.Search)`. `Page` y `PageSize` son opcionales y nullable como pareja completa: ambos ausentes o `null` solicitan todos los resultados, mientras que una pareja parcial es inválida.
 - Todos los filtros adicionales de GetAll (incluidos enums y booleanos) son nullable y no `required`; `null` significa no aplicar el filtro. No agregues varios listados para representar filtros distintos.
-- En cuerpos JSON usa `required` y nulabilidad para la presencia, DataAnnotations solo cuando aporten al schema OpenAPI y FluentValidation para **ejecutar todas las validaciones** en Application. Toda restricción DataAnnotations debe estar también en FluentValidation; no se exige la relación inversa. No uses `[BindRequired]` ni `[FromQuery]` para sustituir el body del listado.
+- En cuerpos JSON usa `required`, nulabilidad y Data Annotations para el contrato, e `IValidatableObject` para reglas entre propiedades. Cada handler de Application llama `request.Validate()` antes de producir efectos; no depende de MVC ni repite el boilerplate de validación. No uses `[BindRequired]` ni `[FromQuery]` para sustituir el body del listado.
 - Normaliza strings en un solo lugar y antes de validarlas, si así lo hace el proyecto (por ejemplo, `Trim().ToUpperInvariant()`); no conviertas mayúsculas/minúsculas sin considerar semántica de búsqueda. Usa `string?` cuando `null` tenga significado propio, incluso para distinguir Search nulo de cadena vacía.
 - No pongas `IFormFile`, tipos MVC ni dependencias de transporte en un request de Application.
 - Asegura que `Page` sea positiva y que `PageSize` pertenezca al enum del proyecto cuando la pareja está presente.
 - En Update, incluye solo campos que la operación permite cambiar; no reutilices automáticamente el Request de Create.
 - En Create, no aceptes campos controlados por el servidor (por ejemplo, ID autogenerado) salvo que el contrato lo requiera expresamente.
 - Todo dato de negocio distinto del ID principal (por ejemplo, `motivo`, `estado` o IDs relacionados permitidos) va en `Request`, aunque sea un único escalar. No se pasa directamente al handler/controller por tener un significado claro. `CancellationToken` permanece como parámetro técnico separado.
-- DataAnnotations y FluentValidation son mecanismos distintos: `[ApiController]` ejecuta atributos del DTO enlazado y responde 400 si ModelState es inválido, mientras que `ValidateAndThrowAsync` ejecuta reglas FluentValidation pero no atributos. Toda restricción declarada con DataAnnotations debe repetirse en FluentValidation; FluentValidation puede incluir reglas adicionales sin DataAnnotations. Application no puede confiar en que MVC validó antes.
+- `[ApiController]` ejecuta automáticamente las Data Annotations del DTO enlazado y responde 400 si ModelState es inválido; no agregues una ejecución manual equivalente en el controller. Application vuelve a validar su Request con `request.Validate()`, porque no puede confiar en que MVC lo haya validado antes.

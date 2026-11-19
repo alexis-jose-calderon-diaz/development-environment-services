@@ -1,115 +1,179 @@
-# `Validator.cs` en las slices CRUD
+# Validación de `Request` con APIs nativas de .NET
 
 ## Responsabilidad
 
-Contiene en FluentValidation **todas** las reglas de validación de entrada del `Request` de su slice: presencia, longitud, rango, formato, pertenencia al enum y reglas condicionales. DataAnnotations en `Request.cs` se agregan solo cuando aportan al schema OpenAPI; toda restricción declarada con esos atributos debe tener regla equivalente en FluentValidation, que puede incluir reglas adicionales sin DataAnnotations. Los atributos nunca sustituyen la validación de Application.
+Las reglas declarativas del contrato pertenecen al `Request` de Application:
 
-## Cuándo incluirlo
+- Data Annotations (`System.ComponentModel.DataAnnotations`) expresan restricciones de propiedades.
+- `IValidatableObject` expresa condiciones y relaciones entre propiedades del mismo objeto.
+- Un `ValidationAttribute` personalizado se reserva para una regla reutilizable que no pueda expresarse con atributos nativos.
 
-Inclúyelo cuando el `Request` tenga restricciones de entrada; no omitas el validator por haber agregado DataAnnotations:
+Cada handler que recibe un `Request` llama `request.Validate()` antes de producir efectos, aunque `[ApiController]` ya haya validado el mismo objeto en una llamada HTTP. La extensión compartida evita repetir en cada handler la creación de `ValidationContext` y la llamada al API nativo. Application no depende del transporte ni de una validación previa de MVC. No se crean archivos `Validator.cs` ni registros DI de validators como patrón para slices nuevas.
 
-- **Create**: presencia, rangos, enums y reglas específicas de creación.
-- **Get**: siempre tiene `Get/Validator.cs` para restricciones de longitud de `Search` cuando corresponda y para la pareja opcional nullable `Page`/`PageSize`: ambos ausentes o `null` son válidos, una pareja parcial es inválida y ambos valores se validan cuando están presentes; `Search` ausente o vacío no aplica filtro y los demás filtros opcionales solo se validan cuando tienen valor.
-- **Update**: valida de nuevo todas las reglas del Request de actualización, incluidas las simples ya descritas con atributos; no supongas que son iguales a Create.
-- **Delete**: no requiere validator si solo recibe un ID. Si el caso de uso tiene un payload o una precondición de comportamiento expresable para esa entrada, puede tener `Delete/Validator.cs`; not-found y las invariantes de dependencia deben seguir protegidas autoritativamente por el caso de uso/dominio.
+## Cuándo incluir reglas
 
-No crees validators vacíos. Si un `Request` no tiene reglas que ejecutar, omite su validator; esto no elimina un `Request` requerido por el contrato uniforme de entrada. La necesidad del `Request` depende de los datos de negocio, no de si tiene restricciones. El Get paginado siempre tiene reglas.
+- **Create**: restricciones de presencia, longitud, rango, formato y enum en el `Request`; usa `IValidatableObject` para consistencia entre campos.
+- **Get**: `Search` y demás filtros siguen siendo opcionales. La pareja nullable `Page`/`PageSize` se omite completa para obtener todos los resultados coincidentes o se proporciona completa; los atributos validan cada valor y `IValidatableObject` rechaza una pareja parcial.
+- **Update**: expresa las restricciones del contrato de actualización, que pueden diferir de Create.
+- **Delete**: no agregues una validación ni un `Request` artificial si solo se recibe el ID principal.
+- **Regla reutilizable no nativa**: crea un `ValidationAttribute` solo si la misma regla declarativa se comparte entre contratos. Incluye pruebas unitarias para los casos válidos e inválidos y para la asociación del error.
+
+Si un `Request` no tiene restricciones, no agregues validación artificial. Esto no elimina un `Request` exigido por los datos de negocio o el contrato uniforme de entrada.
 
 ## Qué mecanismo usar
 
-| Tipo de regla | FluentValidation obligatorio | DataAnnotations cuando aplica |
-|---|---|---|
-| Presencia o vacío | `NotNull()` si `""` es válido; `NotEmpty()` si no | `[Required(AllowEmptyStrings = true)]` o `[Required]` con la misma semántica |
-| Longitud, rango, formato | `MaximumLength`, `InclusiveBetween`, `Matches`, etc. | `[MaxLength]`, `[Range]`, `[RegularExpression]` compatibles |
-| Enum recibido | `IsInEnum()`; en filtros nullable, solo si existe un valor | `[EnumDataType]` si aplica al campo |
-| Subconjunto permitido | `Must(...)`/`NotEqual(...)` además de pertenencia | Solo un atributo que represente **exactamente** la regla; de lo contrario, documenta con OpenAPI |
-| Escala decimal o condición entre campos | `Must(...)`, `When(...)`, etc. | Solo si existe un atributo estándar equivalente |
-| Precondición de negocio consultada | Regla asíncrona o comprobación autoritativa en handler/dominio | Ninguna DataAnnotation de contrato puede sustituirla |
+| Tipo de regla | Mecanismo |
+|---|---|
+| Presencia/no nulo | `[Required]`; declara nulabilidad y `required` de acuerdo con el contrato |
+| Longitud | `[MinLength]` y `[MaxLength]` como restricciones separadas |
+| Rango numérico | `[Range]` |
+| Formato estándar | Atributos especializados, como `[EmailAddress]`, `[Url]` o `[Phone]` |
+| Formato propio | `[RegularExpression]` solo cuando el patrón represente realmente el contrato |
+| Pertenencia a enum | Metadata de enum, por ejemplo `[EnumDataType]`, y validación explícita en Application |
+| Condición o relación entre propiedades | `IValidatableObject` |
+| Regla reutilizable no cubierta por .NET | `ValidationAttribute` personalizado con pruebas unitarias |
+| Existencia, unicidad, permisos, persistencia o servicio externo | Comprobación síncrona o asíncrona en Application, fuera de atributos |
+| Invariante fundamental del negocio | Dominio; mantener además las restricciones autoritativas de integridad en persistencia cuando correspondan |
 
-Duplicar una restricción con DataAnnotations es intencional cuando el atributo aporta al schema OpenAPI: FluentValidation protege Application y DataAnnotations describen el contrato y participan en MVC. Toda restricción declarada con DataAnnotations debe tener equivalente en FluentValidation, pero FluentValidation puede incluir reglas adicionales sin anotaciones. Mantén límites y semántica equivalentes cuando ambos expresen la misma restricción; si un atributo no refleja la regla exacta, usa solo FluentValidation y completa la documentación OpenAPI por el mecanismo del proyecto. Las invariantes críticas siguen teniendo protección autoritativa en handler/dominio/persistencia.
+Declara cada restricción una sola vez en el contrato. MVC y Application pueden ejecutar esa misma declaración en sus respectivas fronteras; no hace falta duplicarla en dos mecanismos. Los atributos no deben consultar bases de datos, servicios externos ni dependencias de Infrastructure.
 
 ## Ejemplos
 
+### Reglas de propiedad y validación entre propiedades
+
+```csharp
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Production.Domain.Enums;
+
+public sealed record Request : IValidatableObject
+{
+    [MaxLength(100, ErrorMessage = "La búsqueda no puede exceder los 100 caracteres.")]
+    public string? Search
+    {
+        get;
+        init => field = value?.Trim().ToUpperInvariant();
+    }
+
+    [Range(1, int.MaxValue, ErrorMessage = "La página debe ser mayor o igual a 1.")]
+    public int? Page { get; init; }
+
+    [EnumDataType(typeof(PageSize), ErrorMessage = "El tamaño de página no es válido.")]
+    public PageSize? PageSize { get; init; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Page.HasValue != PageSize.HasValue)
+        {
+            yield return new ValidationResult(
+                "Los parámetros de página y tamaño deben especificarse juntos.",
+                new[] { nameof(Page), nameof(PageSize) }
+            );
+        }
+    }
+}
+```
+
+`Search` ausente, `null` o vacío no aplica filtro. Si `Page` y `PageSize` se omiten juntos, el handler devuelve todos los resultados coincidentes; si solo uno tiene valor, `IValidatableObject` asocia el error a ambos miembros. Cuando están presentes, `[Range]` y `[EnumDataType]` validan sus valores.
+
+Un campo requerido puede declarar por separado presencia y longitud:
+
+```csharp
+[Required(ErrorMessage = "El nombre es obligatorio.")]
+[MinLength(4, ErrorMessage = "El nombre debe tener al menos 4 caracteres.")]
+[MaxLength(45, ErrorMessage = "El nombre no puede exceder los 45 caracteres.")]
+public required string Name
+{
+    get;
+    init => field = value?.Trim().ToUpperInvariant() ?? string.Empty;
+} = string.Empty;
+```
+
+Normaliza strings antes de validarlos, según la semántica de la operación. No conviertas una regla de negocio de subconjunto de enum en una mera comprobación de pertenencia; expresa la condición entre valores en `IValidatableObject` o en Application, según necesite infraestructura.
+
+### Atributo reutilizable
+
+Cuando una regla personalizada se reutiliza en varios contratos y no existe un atributo nativo equivalente, implementa `ValidationAttribute`. Mantén la regla síncrona y sin acceso a infraestructura:
+
 ```csharp
 using System;
-using FluentValidation;
+using System.ComponentModel.DataAnnotations;
 
-// Get/Validator.cs para un Request con Search opcional y la pareja del enum PageSize del proyecto.
-internal sealed class Validator : AbstractValidator<Request>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+public sealed class NonEmptyGuidAttribute : ValidationAttribute
 {
-    public Validator()
+    protected override ValidationResult? IsValid(
+        object? value,
+        ValidationContext validationContext
+    )
     {
-        RuleFor(request => request.Search)
-            .MaximumLength(100)
-            .WithMessage("La búsqueda no puede exceder los 100 caracteres.");
+        if (value is Guid id && id == Guid.Empty)
+        {
+            return new ValidationResult(
+                ErrorMessage ?? "El identificador no puede estar vacío.",
+                new[] { validationContext.MemberName! }
+            );
+        }
 
-        RuleFor(request => request.Page)
-            .GreaterThanOrEqualTo(1)
-            .WithMessage("La página debe ser mayor o igual a 1.")
-            .When(request => request.Page.HasValue);
-
-        RuleFor(request => request.PageSize)
-            .Must(pageSize => pageSize is null || Enum.IsDefined(pageSize.Value))
-            .WithMessage("El tamaño de página especificado no es válido.");
-            
-        RuleFor(request => request)
-            .Must(request => request.Page.HasValue == request.PageSize.HasValue)
-            .WithMessage("Los parámetros de página y tamaño deben especificarse juntos.");
+        return ValidationResult.Success;
     }
 }
 ```
 
-`Search` es opcional; el request puede normalizar ausencia o `null` a `string.Empty`, y el handler omite el filtro textual con `!string.IsNullOrEmpty(request.Search)`. La pareja de paginación ausente o `null` significa que no se aplica paginación; FluentValidation rechaza que solo uno de los campos tenga valor. El ejemplo usa el enum real `PageSize`, cuyos miembros vigentes son `TEN`, `FIFTEEN`, `TWENTY`, `TWENTY_FIVE` y `FIFTY`.
+La nulabilidad y `[Required]` determinan si `null` es admisible; el atributo anterior solo rechaza un `Guid.Empty`. Prueba el resultado válido, el inválido y los miembros asociados. Si la regla solo aplica a un único modelo, prefiere `IValidatableObject` antes que crear un atributo.
 
-Para un filtro adicional opcional de tipo `EstadoCotizacion?`, usa una regla FluentValidation que no convierta `null` en obligatorio:
+## Ejecución en Application
+
+Los handlers usan la extensión compartida; no repiten directamente la configuración de `Validator`:
 
 ```csharp
-RuleFor(request => request.Estado)
-    .IsInEnum()
-    .WithMessage("El estado especificado no es válido.")
-    .When(request => request.Estado.HasValue);
+using Production.Application.Features.Shared.Extensions;
+
+request.Validate();
 ```
 
-Si la operación recibe un enum `ResultadoCotizacion` con miembros `PENDIENTE`, `GANADA`, `RECHAZADA`, `VENCIDA` pero solo permite asignar dos:
+La extensión genérica se define una sola vez en `Production.Application/Features/Shared/Extensions/ValidationExtensions.cs`:
 
 ```csharp
-RuleFor(request => request.Resultado)
-    .Must(resultado => resultado is ResultadoCotizacion.GANADA or ResultadoCotizacion.RECHAZADA)
-    .WithMessage("El resultado solo puede ser GANADA o RECHAZADA.");
-```
+using System.ComponentModel.DataAnnotations;
 
-Esto valida un subconjunto de negocio, no equivale a comprobar únicamente `IsInEnum()`.
+namespace Production.Application.Features.Shared.Extensions;
 
-### Validación de comportamiento que requiere consultar estado
-
-Cuando una precondición de la operación depende de datos persistidos o de un servicio, FluentValidation puede usar una regla asíncrona y un puerto de Application. No inyectes Infrastructure directamente en el validator.
-
-```csharp
-internal sealed class Validator : AbstractValidator<Request>
+public static class ValidationExtensions
 {
-    public Validator(IProductNameAvailability nameAvailability)
+    extension(object model)
     {
-        RuleFor(request => request.Name)
-            .MustAsync(async (name, cancellationToken) =>
-            {
-                bool exists = await nameAvailability.ExistsAsync(name, cancellationToken);
-                return !exists;
-            })
-            .WithMessage("Ya existe un producto con ese nombre.");
+        public void Validate()
+        {
+            Validator.ValidateObject(
+                model,
+                new ValidationContext(model),
+                validateAllProperties: true
+            );
+        }
     }
 }
 ```
 
-Usa estas reglas para rechazar pronto una petición con feedback de validación. Una consulta previa no garantiza unicidad frente a concurrencia ni reemplaza una invariante: protege la operación también en dominio/persistencia (por ejemplo, con una restricción única) y traduce el conflicto según el patrón del proyecto. Para reglas de transición críticas, el dominio/handler conserva la decisión autoritativa.
+`request.Validate()` se llama antes de consultar o mutar estado y lanza `ValidationException` si el objeto no es válido. El helper no requiere registro DI y conserva el mensaje y los miembros informados por Data Annotations. El host debe adaptar los errores de Application al `400 ValidationProblemDetails` vigente. No dupliques en el controller la validación automática que MVC ya hizo.
 
-## Decisiones importantes
+Esta extensión valida el objeto que recibe, no un grafo completo. Si el contrato contiene objetos anidados o colecciones, el recorrido explícito descrito abajo debe centralizarse en un helper reutilizable que prevenga ciclos y conserve las rutas de error; no copies un recorrido recursivo en cada handler.
 
-- Valida los valores ya normalizados por `Request`.
-- Declara mensajes en la regla cuando esa sea la convención del proyecto; evita constantes externas para reglas locales.
-- Usa `IsInEnum()` en Application para los enums recibidos y `[EnumDataType]` para documentar pertenencia en el Request cuando corresponda. No confíes en casts de valores numéricos. Los miembros de enums siguen `UPPER_SNAKE_CASE` (ver [domain-persistence.md](domain-persistence.md)).
-- Expresa también las reglas simples en FluentValidation aunque estén reflejadas en DataAnnotations; las relaciones entre campos y condiciones (`Equal`, `When`, `Must`, etc.) permanecen allí cuando ningún atributo las describe.
-- Si una regla usa `MustAsync`/`CustomAsync`/condición asíncrona, ejecuta `ValidateAsync` o `ValidateAndThrowAsync` y propaga el `CancellationToken`; no uses validación síncrona.
-- Coloca los validators en la slice del Request al que validan: `Create/Validator.cs`, `Get/Validator.cs` o `Update/Validator.cs`. No crees `Delete/Validator.cs` por simetría si Delete solo recibe un ID.
-- No pongas validación manual en el controller. Las invariantes críticas pueden y deben tener protección autoritativa en dominio/persistencia además del pre-chequeo de FluentValidation.
-- Valida `Page` positiva y la pertenencia de `PageSize` al enum del proyecto cuando la pareja está presente; la ausencia o cadena vacía de `Search` no agrega un filtro.
-- Valida rango decimal en FluentValidation y descríbelo con `[Range]` cuando aplique; valida también la escala máxima en Application antes de persistir, sin truncar ni redondear silenciosamente. Para objetos anidados, reutiliza un validator de `RequestPerfilTecnico` solo si más de una slice comparte el contrato; usa `SetValidator` y valida la obligatoriedad del objeto y de sus campos.
+## Objetos anidados y colecciones
+
+`Validator.ValidateObject`, usado por la extensión, no recorre automáticamente objetos anidados ni elementos de colecciones. Cuando formen parte del contrato:
+
+1. Valida explícitamente cada objeto y elemento pertinente, manteniendo el recorrido en una utilidad compartida en vez de repetirlo en handlers.
+2. Anteponles su ruta al `MemberNames` del error (por ejemplo, `Perfil.Nombre` o `Items[2].Nombre`) para identificar el miembro afectado.
+3. Protege el recorrido recursivo contra ciclos de referencia: mantén un conjunto de objetos actualmente en la ruta usando igualdad por referencia y evita volver a entrar en un objeto que ya esté en esa ruta. Retira cada objeto al salir para permitir que una instancia compartida aparezca por rutas distintas.
+4. No recorras valores escalares ni expandas el contrato a entidades que no forman parte de la entrada.
+
+La validación de un objeto raíz con `request.Validate()` no reemplaza esta estrategia explícita. Evita asumir que la recursividad de MVC o la anotación de una propiedad anidada resolverá también la validación ejecutada en Application.
+
+## Reglas asíncronas y límites de capa
+
+Los atributos y `IValidatableObject` son síncronos y no reciben `CancellationToken`; no los uses para consultas, permisos ni efectos secundarios. Las comprobaciones de existencia, unicidad, reglas temporales que dependen de estado persistido y servicios externos se ejecutan en Application mediante sus puertos, antes de producir efectos. Propaga `CancellationToken` a cada operación asíncrona. Una consulta previa no garantiza unicidad ante concurrencia: conserva la restricción autoritativa en persistencia y las invariantes del dominio.
+
+## Transición del runtime
+
+El runtime actual conserva FluentValidation en slices existentes, junto con sus registros y manejo de excepciones. Esta guía define el estándar nativo para funcionalidad nueva; no afirma que el backend ya esté migrado ni autoriza retirar parcialmente los componentes heredados. Su sustitución requiere una migración coordinada.
