@@ -8,7 +8,7 @@ Las reglas declarativas del contrato pertenecen al `Request` de Application:
 - `IValidatableObject` expresa condiciones y relaciones entre propiedades del mismo objeto.
 - Un `ValidationAttribute` personalizado se reserva para una regla reutilizable que no pueda expresarse con atributos nativos.
 
-Cada handler que recibe un `Request` llama `request.Validate()` antes de producir efectos, aunque `[ApiController]` ya haya validado el mismo objeto en una llamada HTTP. La extensión compartida evita repetir en cada handler la creación de `ValidationContext` y la llamada al API nativo. Application no depende del transporte ni de una validación previa de MVC. No se crean archivos `Validator.cs` ni registros DI de validators como patrón para slices nuevas.
+Cada handler que recibe un `Request` valida antes de producir efectos, aunque `[ApiController]` ya haya validado el mismo objeto en una llamada HTTP. El estándar objetivo concentra la llamada a Data Annotations y la agregación en una utilidad compartida de Application: el handler no repite la creación de `ValidationContext` y Application no depende del transporte ni de una validación previa de MVC. No se crean archivos `Validator.cs` ni registros DI de validators como patrón para slices nuevas.
 
 ## Cuándo incluir reglas
 
@@ -122,7 +122,7 @@ public sealed class NonEmptyGuidAttribute : ValidationAttribute
 
 La nulabilidad y `[Required]` determinan si `null` es admisible; el atributo anterior solo rechaza un `Guid.Empty`. Prueba el resultado válido, el inválido y los miembros asociados. Si la regla solo aplica a un único modelo, prefiere `IValidatableObject` antes que crear un atributo.
 
-## Ejecución en Application
+## Ejecución objetivo en Application
 
 Los handlers usan la extensión compartida; no repiten directamente la configuración de `Validator`:
 
@@ -132,9 +132,10 @@ using Production.Application.Features.Shared.Extensions;
 request.Validate();
 ```
 
-La extensión genérica se define una sola vez en `Production.Application/Features/Shared/Extensions/ValidationExtensions.cs`:
+La utilidad objetivo se define una sola vez en `Production.Application/Features/Shared/Extensions/ValidationExtensions.cs`. Esquema conceptual —la excepción propia aún debe implementarse—:
 
 ```csharp
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Production.Application.Features.Shared.Extensions;
@@ -145,30 +146,70 @@ public static class ValidationExtensions
     {
         public void Validate()
         {
-            Validator.ValidateObject(
-                model,
-                new ValidationContext(model),
-                validateAllProperties: true
-            );
+            List<ValidationResult> results = [];
+            ValidationContext context = new(model);
+
+            if (
+                Validator.TryValidateObject(
+                    model,
+                    context,
+                    results,
+                    validateAllProperties: true
+                )
+            )
+                return;
+
+            throw new RequestValidationException(results);
         }
     }
 }
 ```
 
-`request.Validate()` se llama antes de consultar o mutar estado y lanza `ValidationException` si el objeto no es válido. El helper no requiere registro DI y conserva el mensaje y los miembros informados por Data Annotations. El host debe adaptar los errores de Application al `400 ValidationProblemDetails` vigente. No dupliques en el controller la validación automática que MVC ya hizo.
+`RequestValidationException` representa una excepción propia de Application; debe conservar los `ValidationResult` producidos, incluidos `ErrorMessage` y todos sus `MemberNames`. No la sustituyas por `System.ComponentModel.DataAnnotations.ValidationException` ni por `FluentValidation.ValidationException`: evita la ambigüedad de tipos y no pierdas el conjunto de resultados. En particular, `Validator.ValidateObject` termina lanzando una `ValidationException` basada en un resultado, en vez de exponer la colección agregada. El helper no requiere registro DI.
 
-Esta extensión valida el objeto que recibe, no un grafo completo. Si el contrato contiene objetos anidados o colecciones, el recorrido explícito descrito abajo debe centralizarse en un helper reutilizable que prevenga ciclos y conserve las rutas de error; no copies un recorrido recursivo en cada handler.
+`TryValidateObject(..., validateAllProperties: true)` valida por etapas:
+
+1. Propiedades del objeto.
+2. Atributos aplicados al tipo.
+3. Validación del objeto, incluida `IValidatableObject.Validate(...)`.
+
+Una etapa se ejecuta solo si la anterior tuvo éxito. Por tanto, `IValidatableObject` no se ejecuta si falló la validación de propiedades, y los resultados representan únicamente los errores que Data Annotations produjo en las etapas alcanzadas; no prometas que se ejecutarán todas las reglas posibles. El argumento `validateAllProperties: true` hace que se evalúen los atributos de todas las propiedades. La API no recorre recursivamente los valores de las propiedades.
+
+Application valida antes de consultar o mutar estado. El middleware debe adaptar la excepción propia al `400 ValidationProblemDetails` vigente; no se duplica en el controller la validación automática que MVC ya hizo.
 
 ## Objetos anidados y colecciones
 
-`Validator.ValidateObject`, usado por la extensión, no recorre automáticamente objetos anidados ni elementos de colecciones. Cuando formen parte del contrato:
+`TryValidateObject` no recorre automáticamente objetos anidados ni elementos de colecciones. Cuando formen parte del contrato, el recorrido debe centralizarse en la utilidad compartida:
 
-1. Valida explícitamente cada objeto y elemento pertinente, manteniendo el recorrido en una utilidad compartida en vez de repetirlo en handlers.
-2. Anteponles su ruta al `MemberNames` del error (por ejemplo, `Perfil.Nombre` o `Items[2].Nombre`) para identificar el miembro afectado.
-3. Protege el recorrido recursivo contra ciclos de referencia: mantén un conjunto de objetos actualmente en la ruta usando igualdad por referencia y evita volver a entrar en un objeto que ya esté en esa ruta. Retira cada objeto al salir para permitir que una instancia compartida aparezca por rutas distintas.
+1. Valida explícitamente cada objeto y elemento pertinente. Si un nodo produce errores, continúa recorriendo sus otros miembros y los nodos hermanos para recoger errores independientes; la semántica por etapas de `TryValidateObject` sigue aplicando dentro de cada nodo.
+2. Prefija cada `MemberName` con la ruta de acceso, por ejemplo `Perfil.Nombre` o `Items[2].Nombre`. Conserva todos los miembros informados por cada `ValidationResult`; si el resultado no incluye miembros, usa la clave general `request`.
+3. Protege el recorrido contra ciclos con una pila o conjunto de referencias activas y comparación por referencia. Omite solo la reentrada a un objeto que ya esté en la ruta actual y retíralo al salir: así una misma instancia compartida se puede validar desde rutas distintas y producir errores con cada ruta.
 4. No recorras valores escalares ni expandas el contrato a entidades que no forman parte de la entrada.
 
-La validación de un objeto raíz con `request.Validate()` no reemplaza esta estrategia explícita. Evita asumir que la recursividad de MVC o la anotación de una propiedad anidada resolverá también la validación ejecutada en Application.
+La validación del objeto raíz no reemplaza esta estrategia explícita. Evita asumir que la recursividad de MVC o la anotación de una propiedad anidada resolverá también la validación ejecutada en Application.
+
+## Adaptación HTTP conceptual
+
+`GlobalExceptionMiddleware` debe capturar específicamente la excepción propia de Application, convertir cada `ValidationResult` en mensajes agrupados por miembro y escribir un `400 ValidationProblemDetails`. Antepondrá las rutas calculadas por Application y usará `request` para resultados sin `MemberNames`. La validación automática de `[ApiController]` sigue cubriendo el binding HTTP, pero no sustituye la llamada explícita del handler ni debe introducir dependencias de MVC en Application.
+
+## Pruebas para una futura implementación
+
+La migración deberá añadir pruebas que cubran al menos:
+
+| Caso | Comprobación |
+|---|---|
+| Request válido | No lanza la excepción propia. |
+| Varios errores de propiedades | Conserva todos los `ValidationResult` emitidos en esa etapa y sus miembros; confirma que las etapas posteriores no se ejecutan tras un fallo anterior. |
+| `IValidatableObject` | Se ejecuta cuando las etapas previas tienen éxito y conserva sus mensajes y miembros. |
+| `ValidationAttribute` personalizado | Conserva mensaje y miembro para resultados válido e inválido. |
+| Objeto anidado | Un error del hijo queda bajo una ruta como `Perfil.Nombre`. |
+| Colección | Un error de elemento incluye el índice, por ejemplo `Items[2].Nombre`. |
+| Ciclo de referencias | El recorrido termina sin recursión infinita y valida los nodos alcanzables pertinentes. |
+| Instancia compartida | Se puede validar desde rutas distintas, preservando cada ruta de error. |
+| Resultado sin miembros | Se agrupa bajo `request`. |
+| Middleware | Traduce la excepción propia a HTTP 400 y agrupa mensajes correctamente en `ValidationProblemDetails`. |
+
+Estos casos son criterios de una futura implementación; este cambio documental no añade ni ejecuta pruebas de código.
 
 ## Reglas asíncronas y límites de capa
 
@@ -176,4 +217,4 @@ Los atributos y `IValidatableObject` son síncronos y no reciben `CancellationTo
 
 ## Transición del runtime
 
-El runtime actual conserva FluentValidation en slices existentes, junto con sus registros y manejo de excepciones. Esta guía define el estándar nativo para funcionalidad nueva; no afirma que el backend ya esté migrado ni autoriza retirar parcialmente los componentes heredados. Su sustitución requiere una migración coordinada.
+El runtime actual todavía no implementa el estándar objetivo: `ValidationExtensions.Validate()` usa `Validator.ValidateObject(..., validateAllProperties: true)`, que lanza una `System.ComponentModel.DataAnnotations.ValidationException` basada en un resultado, y las slices existentes conservan FluentValidation, sus registros y su manejo de excepciones en `GlobalExceptionMiddleware`. Aún no existen la excepción propia con una colección de `ValidationResult`, el recorrido agregado ni el adaptador descrito arriba. Esta guía no afirma que el backend ya esté migrado ni autoriza retirar parcialmente los componentes heredados; su sustitución requiere una migración coordinada.
