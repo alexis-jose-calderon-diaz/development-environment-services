@@ -55,7 +55,7 @@ public sealed record Request : IValidatableObject
 }
 ```
 
-`Search` ausente o vacío no aplica filtro textual; el handler lo omite con `!string.IsNullOrEmpty(request.Search)`. `Page` y `PageSize` se omiten juntos para solicitar todos los resultados coincidentes. Si solo se proporciona uno, `IValidatableObject` rechaza la pareja inconsistente y asocia el error a ambas propiedades; si ambos están presentes, sus Data Annotations validan la página y la pertenencia de `PageSize` al enum. OpenAPI los documenta como opcionales y nullable. El handler llama `request.Validate()` antes de procesar la consulta.
+`Search` ausente o vacío no aplica filtro textual; el handler lo omite con `!string.IsNullOrEmpty(request.Search)`. `Page` y `PageSize` se omiten juntos para solicitar todos los resultados coincidentes. Si solo se proporciona uno, `IValidatableObject` rechaza la pareja inconsistente y asocia el error a ambas propiedades; si ambos están presentes, sus Data Annotations validan la página y la pertenencia de `PageSize` al enum. `[ApiController]` ejecuta estas reglas antes del handler. OpenAPI los documenta como opcionales y nullable.
 
 `Update/Request.cs` tiene el mismo nombre simple dentro del namespace de su slice y solo contiene campos editables:
 
@@ -98,7 +98,7 @@ public sealed record Request
 
 ## Data Annotations en el contrato
 
-Usa Data Annotations nativas para declarar las restricciones de propiedad del contrato (presencia, longitud, rango, formato y metadata de enum); el schema OpenAPI debe reflejar las que admite. Las reglas condicionales o entre propiedades pertenecen a `IValidatableObject`. No dupliques una regla en otro mecanismo. MVC las ejecuta al enlazar el modelo y Application vuelve a validar el mismo Request con `request.Validate()` porque el caso de uso puede invocarse sin HTTP.
+Usa Data Annotations nativas para declarar las restricciones de propiedad del contrato (presencia, longitud, rango, formato y metadata de enum); el schema OpenAPI debe reflejar las que admite. Las reglas condicionales o entre propiedades pertenecen a `IValidatableObject`. No dupliques una regla en otro mecanismo. MVC las ejecuta al enlazar el modelo. Application no vuelve a validar declarativamente el Request; una llamada directa al handler fuera de MVC no obtiene esta validación automáticamente.
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -135,11 +135,11 @@ Aplica estas reglas a cada `Request` que tenga restricciones; no agregues Reques
 
 - `Search` es opcional y nullable; ausencia, `null` o vacío significa que no se aplica el filtro textual. El handler omite el filtro con `!string.IsNullOrEmpty(request.Search)`. `Page` y `PageSize` son opcionales y nullable como pareja completa: ambos ausentes o `null` solicitan todos los resultados, mientras que una pareja parcial es inválida.
 - Todos los filtros adicionales de GetAll (incluidos enums y booleanos) son nullable y no `required`; `null` significa no aplicar el filtro. No agregues varios listados para representar filtros distintos.
-- En cuerpos JSON usa `required`, nulabilidad y Data Annotations para el contrato, e `IValidatableObject` para reglas entre propiedades. Cada handler de Application llama `request.Validate()` antes de producir efectos; no depende de MVC ni repite el boilerplate de validación. No uses `[BindRequired]` ni `[FromQuery]` para sustituir el body del listado.
+- En cuerpos JSON usa `required`, nulabilidad y Data Annotations para el contrato, e `IValidatableObject` para reglas entre propiedades. `[ApiController]` ejecuta esas reglas antes de producir efectos. No uses `[BindRequired]` ni `[FromQuery]` para sustituir el body del listado.
 - Normaliza strings en un solo lugar y antes de validarlas, si así lo hace el proyecto (por ejemplo, `Trim().ToUpperInvariant()`); no conviertas mayúsculas/minúsculas sin considerar semántica de búsqueda. Usa `string?` cuando `null` tenga significado propio, incluso para distinguir Search nulo de cadena vacía.
 - No pongas `IFormFile`, tipos MVC ni dependencias de transporte en un request de Application.
 - Asegura que `Page` sea positiva y que `PageSize` pertenezca al enum del proyecto cuando la pareja está presente.
 - En Update, incluye solo campos que la operación permite cambiar; no reutilices automáticamente el Request de Create.
 - En Create, no aceptes campos controlados por el servidor (por ejemplo, ID autogenerado) salvo que el contrato lo requiera expresamente.
 - Todo dato de negocio distinto del ID principal (por ejemplo, `motivo`, `estado` o IDs relacionados permitidos) va en `Request`, aunque sea un único escalar. No se pasa directamente al handler/controller por tener un significado claro. `CancellationToken` permanece como parámetro técnico separado.
-- `[ApiController]` ejecuta automáticamente las Data Annotations del DTO enlazado y responde 400 si ModelState es inválido; no agregues una ejecución manual equivalente en el controller. Application vuelve a validar su Request con `request.Validate()`, porque no puede confiar en que MVC lo haya validado antes.
+- `[ApiController]` ejecuta automáticamente las Data Annotations e `IValidatableObject` del DTO enlazado y responde `400 ValidationProblemDetails` si el `ModelState` es inválido; no agregues una ejecución manual equivalente en controller ni handler.

@@ -122,99 +122,24 @@ public sealed class NonEmptyGuidAttribute : ValidationAttribute
 
 La nulabilidad y `[Required]` determinan si `null` es admisible; el atributo anterior solo rechaza un `Guid.Empty`. Prueba el resultado válido, el inválido y los miembros asociados. Si la regla solo aplica a un único modelo, prefiere `IValidatableObject` antes que crear un atributo.
 
-## Ejecución objetivo en Application
+## Ejecución en ASP.NET Core
 
-Los handlers usan la extensión compartida; no repiten directamente la configuración de `Validator`:
+Los controllers de la API usan `[ApiController]`. Tras enlazar y deserializar el input, ASP.NET Core ejecuta Data Annotations e `IValidatableObject`; si el `ModelState` no es válido, responde automáticamente con `400 ValidationProblemDetails` antes de invocar el action.
 
-```csharp
-using Production.Application.Features.Shared.Extensions;
+La validación MVC recorre el grafo de modelos enlazados, incluidos objetos anidados y elementos de colecciones, y conserva rutas de miembro como `Perfil.Nombre` o `Items[2].Nombre`. Los endpoints HTTP deben mantener sus reglas declarativas en los `Request` enlazados y probar el comportamiento mediante solicitudes a la API.
 
-request.Validate();
-```
+Application no ejecuta validación declarativa de `Request`. Las llamadas directas a handlers desde jobs, otros casos de uso o pruebas no atraviesan el model binding y, por tanto, no reciben automáticamente esas validaciones. Mantén en Application las reglas manuales, asíncronas y de negocio que correspondan; no las sustituyas por atributos.
 
-La utilidad objetivo se define una sola vez en `Production.Application/Features/Shared/Extensions/ValidationExtensions.cs`. Esquema conceptual —la excepción propia aún debe implementarse—:
+`GlobalExceptionMiddleware` sigue adaptando `RequestValidationException` a `400 ValidationProblemDetails` cuando Application lanza explícitamente errores de validación manuales. No es el mecanismo para ejecutar las Data Annotations del model binding.
 
-```csharp
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+## Pruebas de validación
 
-namespace Production.Application.Features.Shared.Extensions;
-
-public static class ValidationExtensions
-{
-    extension(object model)
-    {
-        public void Validate()
-        {
-            List<ValidationResult> results = [];
-            ValidationContext context = new(model);
-
-            if (
-                Validator.TryValidateObject(
-                    model,
-                    context,
-                    results,
-                    validateAllProperties: true
-                )
-            )
-                return;
-
-            throw new RequestValidationException(results);
-        }
-    }
-}
-```
-
-`RequestValidationException` representa una excepción propia de Application; debe conservar los `ValidationResult` producidos, incluidos `ErrorMessage` y todos sus `MemberNames`. No la sustituyas por `System.ComponentModel.DataAnnotations.ValidationException` ni por `FluentValidation.ValidationException`: evita la ambigüedad de tipos y no pierdas el conjunto de resultados. En particular, `Validator.ValidateObject` termina lanzando una `ValidationException` basada en un resultado, en vez de exponer la colección agregada. El helper no requiere registro DI.
-
-`TryValidateObject(..., validateAllProperties: true)` valida por etapas:
-
-1. Propiedades del objeto.
-2. Atributos aplicados al tipo.
-3. Validación del objeto, incluida `IValidatableObject.Validate(...)`.
-
-Una etapa se ejecuta solo si la anterior tuvo éxito. Por tanto, `IValidatableObject` no se ejecuta si falló la validación de propiedades, y los resultados representan únicamente los errores que Data Annotations produjo en las etapas alcanzadas; no prometas que se ejecutarán todas las reglas posibles. El argumento `validateAllProperties: true` hace que se evalúen los atributos de todas las propiedades. La API no recorre recursivamente los valores de las propiedades.
-
-Application valida antes de consultar o mutar estado. El middleware debe adaptar la excepción propia al `400 ValidationProblemDetails` vigente; no se duplica en el controller la validación automática que MVC ya hizo.
-
-## Objetos anidados y colecciones
-
-`TryValidateObject` no recorre automáticamente objetos anidados ni elementos de colecciones. Cuando formen parte del contrato, el recorrido debe centralizarse en la utilidad compartida:
-
-1. Valida explícitamente cada objeto y elemento pertinente. Si un nodo produce errores, continúa recorriendo sus otros miembros y los nodos hermanos para recoger errores independientes; la semántica por etapas de `TryValidateObject` sigue aplicando dentro de cada nodo.
-2. Prefija cada `MemberName` con la ruta de acceso, por ejemplo `Perfil.Nombre` o `Items[2].Nombre`. Conserva todos los miembros informados por cada `ValidationResult`; si el resultado no incluye miembros, usa la clave general `request`.
-3. Protege el recorrido contra ciclos con una pila o conjunto de referencias activas y comparación por referencia. Omite solo la reentrada a un objeto que ya esté en la ruta actual y retíralo al salir: así una misma instancia compartida se puede validar desde rutas distintas y producir errores con cada ruta.
-4. No recorras valores escalares ni expandas el contrato a entidades que no forman parte de la entrada.
-
-La validación del objeto raíz no reemplaza esta estrategia explícita. Evita asumir que la recursividad de MVC o la anotación de una propiedad anidada resolverá también la validación ejecutada en Application.
-
-## Adaptación HTTP conceptual
-
-`GlobalExceptionMiddleware` debe capturar específicamente la excepción propia de Application, convertir cada `ValidationResult` en mensajes agrupados por miembro y escribir un `400 ValidationProblemDetails`. Antepondrá las rutas calculadas por Application y usará `request` para resultados sin `MemberNames`. La validación automática de `[ApiController]` sigue cubriendo el binding HTTP, pero no sustituye la llamada explícita del handler ni debe introducir dependencias de MVC en Application.
-
-## Pruebas para una futura implementación
-
-La migración deberá añadir pruebas que cubran al menos:
-
-| Caso | Comprobación |
-|---|---|
-| Request válido | No lanza la excepción propia. |
-| Varios errores de propiedades | Conserva todos los `ValidationResult` emitidos en esa etapa y sus miembros; confirma que las etapas posteriores no se ejecutan tras un fallo anterior. |
-| `IValidatableObject` | Se ejecuta cuando las etapas previas tienen éxito y conserva sus mensajes y miembros. |
-| `ValidationAttribute` personalizado | Conserva mensaje y miembro para resultados válido e inválido. |
-| Objeto anidado | Un error del hijo queda bajo una ruta como `Perfil.Nombre`. |
-| Colección | Un error de elemento incluye el índice, por ejemplo `Items[2].Nombre`. |
-| Ciclo de referencias | El recorrido termina sin recursión infinita y valida los nodos alcanzables pertinentes. |
-| Instancia compartida | Se puede validar desde rutas distintas, preservando cada ruta de error. |
-| Resultado sin miembros | Se agrupa bajo `request`. |
-| Middleware | Traduce la excepción propia a HTTP 400 y agrupa mensajes correctamente en `ValidationProblemDetails`. |
-
-Estos casos son criterios de una futura implementación; este cambio documental no añade ni ejecuta pruebas de código.
+Las pruebas unitarias pueden comprobar las reglas declaradas en cada `Request`; las pruebas de integración HTTP verifican que `[ApiController]` las ejecuta antes del handler y devuelve el `ValidationProblemDetails` esperado, incluidos errores anidados. Todo nuevo `ValidationAttribute` personalizado debe tener además pruebas unitarias para sus resultados válidos e inválidos.
 
 ## Reglas asíncronas y límites de capa
 
 Los atributos y `IValidatableObject` son síncronos y no reciben `CancellationToken`; no los uses para consultas, permisos ni efectos secundarios. Las comprobaciones de existencia, unicidad, reglas temporales que dependen de estado persistido y servicios externos se ejecutan en Application mediante sus puertos, antes de producir efectos. Propaga `CancellationToken` a cada operación asíncrona. Una consulta previa no garantiza unicidad ante concurrencia: conserva la restricción autoritativa en persistencia y las invariantes del dominio.
 
-## Transición del runtime
+## Estado vigente
 
-El runtime actual todavía no implementa el estándar objetivo: `ValidationExtensions.Validate()` usa `Validator.ValidateObject(..., validateAllProperties: true)`, que lanza una `System.ComponentModel.DataAnnotations.ValidationException` basada en un resultado, y las slices existentes conservan FluentValidation, sus registros y su manejo de excepciones en `GlobalExceptionMiddleware`. Aún no existen la excepción propia con una colección de `ValidationResult`, el recorrido agregado ni el adaptador descrito arriba. Esta guía no afirma que el backend ya esté migrado ni autoriza retirar parcialmente los componentes heredados; su sustitución requiere una migración coordinada.
+El runtime valida contratos HTTP mediante el model binding nativo de ASP.NET Core y `[ApiController]`. Application no repite la validación declarativa; `RequestValidationException` permanece para errores manuales que deban traducirse a `400 ValidationProblemDetails`.

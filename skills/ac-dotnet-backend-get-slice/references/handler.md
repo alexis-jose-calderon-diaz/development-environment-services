@@ -8,7 +8,7 @@ Coordina el caso de uso de su slice. Cada handler pertenece a una operación/cap
 
 Incluye un `Handler.cs` por slice de código del módulo propietario de cada entidad; no agrupes todo el CRUD en una clase ni traslades operaciones de una entidad hija al handler del padre.
 
-- **Create**: recibe un `Request` con todos los datos de negocio, aunque tenga una sola propiedad; valida, construye/agrega la entidad o invoca el agregado y persiste; retorna directamente el ID cuando esa es la convención. Si crea un snapshot de otra entidad, consulta el origen mediante modelos `Data` y proyecciones propios de Create, y construye entidades nuevas.
+- **Create**: recibe un `Request` con todos los datos de negocio, aunque tenga una sola propiedad; ejecuta las comprobaciones de negocio necesarias, construye/agrega la entidad o invoca el agregado y persiste; retorna directamente el ID cuando esa es la convención. Si crea un snapshot de otra entidad, consulta el origen mediante modelos `Data` y proyecciones propios de Create, y construye entidades nuevas.
 - **Get**: siempre contiene `Handle(id, cancellationToken)` y `Handle(request, cancellationToken)` para `GetById` y el único `GetAll`. Ambos usan la misma proyección, transformación y respuesta de elemento. El `Request` admite búsqueda opcional y una pareja opcional de paginación; no crees otro Get para devolver el conjunto completo.
 - **Update**: recibe el ID principal aparte y un `Request` con todos los campos editables, incluso si solo hay uno; carga el estado necesario, aplica invariantes y persiste.
 - **Delete**: recibe directamente el ID si es su único dato de negocio; si requiere cualquier otro dato, lo recibe en `Request`. Ejecuta borrado físico o lógico según el dominio y traduce conflictos de negocio conforme al proyecto.
@@ -19,8 +19,6 @@ Incluye un `Handler.cs` por slice de código del módulo propietario de cada ent
 El ejemplo siguiente se concentra en la slice `Get` de la entidad `ProductEntity`. Usa un puerto `IAppDbContext`, EF Core, el enum `PageSize` del proyecto y el contrato de retorno `Production.Application.Models.PaginatedResponse<Response>`, construido con `PaginatedResponseFactory`. La búsqueda es opcional y el handler omite su filtro cuando está ausente o vacío. Las demás variantes se muestran después.
 
 ```csharp
-using Production.Application.Features.Shared.Extensions;
-
 public sealed class Handler(
     IAppDbContext dbContext
 )
@@ -42,8 +40,6 @@ public sealed class Handler(
         CancellationToken cancellationToken
     )
     {
-        request.Validate();
-
         IQueryable<ProductEntity> query = dbContext.Products.AsNoTracking();
 
         if (request.Active.HasValue)
@@ -84,7 +80,6 @@ public sealed class Handler(
 // Create/Handler.cs: resultado escalar directo; no crear Response para envolver el ID.
 public async Task<int> Handle(Request request, CancellationToken cancellationToken)
 {
-    request.Validate();
     ProductEntity product = new()
     {
         Name = request.Name,
@@ -98,7 +93,6 @@ public async Task<int> Handle(Request request, CancellationToken cancellationTok
 // Update/Handler.cs: ID separado del payload de actualización.
 public async Task Handle(int id, Request request, CancellationToken cancellationToken)
 {
-    request.Validate();
     ProductEntity product = await dbContext.Products
         .SingleOrDefaultAsync(item => item.Id == id, cancellationToken)
         ?? throw new NotFoundException();
@@ -119,7 +113,6 @@ public async Task Handle(int id, CancellationToken cancellationToken)
 // Annul/Handler.cs: el motivo es una propiedad de Request, no un argumento escalar.
 public async Task Handle(int id, Request request, CancellationToken cancellationToken)
 {
-    request.Validate();
     // Cargar la entidad y aplicar la transición usando request.Motivo.
 }
 ```
@@ -139,7 +132,7 @@ Los fragmentos son esquemáticos: adapta la construcción de entidades, mutacion
 - Proyecta únicamente la entidad del módulo y sus referencias hacia entidades superiores; no incluyas colecciones hijas en `GetById` ni en los items del listado. Las entidades hijas disponen de su propio módulo Get, también paginado.
 - Si el proveedor de EF Core no puede traducir un filtro o método, revisa la traducción y el SQL; no materialices toda la tabla para aplicar el filtro en memoria.
 - Propaga `CancellationToken` como último parámetro en todas las operaciones asíncronas y pásalo a persistencia/servicios compatibles.
-- Llama `request.Validate()` antes de efectos laterales para centralizar la ejecución de atributos e `IValidatableObject`; no repitas la configuración de `Validator` en cada handler. Las reglas que consultan persistencia, permisos o servicios externos se resuelven aparte en Application con `CancellationToken`, antes de los efectos. Consulta [validator.md](validator.md) para validar objetos anidados y asociar sus errores.
+- En endpoints MVC, `[ApiController]` ejecuta Data Annotations e `IValidatableObject` antes de invocar el handler. Una llamada directa al handler fuera de MVC no obtiene validación declarativa automáticamente. Las reglas que consultan persistencia, permisos o servicios externos se resuelven en Application con `CancellationToken`, antes de los efectos. Consulta [validator.md](validator.md) para la frontera HTTP.
 - No traslades invariantes del dominio al controller ni confíes en validaciones del cliente para protegerlas.
 - Para Create, una comprobación previa de duplicados no reemplaza la restricción única de la BD cuando corresponda; traduce conflictos concurrentes según el patrón existente.
 - Para Update/Delete, carga solo lo necesario. Si el dominio requiere estado o dependencias para validar la mutación, consulta ese estado explícitamente; no uses una proyección de lectura como entidad editable.

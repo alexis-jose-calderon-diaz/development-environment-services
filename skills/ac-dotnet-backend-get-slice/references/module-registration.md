@@ -2,7 +2,7 @@
 
 ## Responsabilidad
 
-Integra los handlers de las slices de **una sola entidad** en el contenedor DI del módulo. La extensión compartida `request.Validate()` no requiere registro; las reglas declarativas pertenecen al `Request` y las ejecuta el handler de Application.
+Integra los handlers de las slices de **una sola entidad** en el contenedor DI del módulo. Las reglas declarativas pertenecen al `Request` y se ejecutan globalmente en la frontera MVC mediante `[ApiController]`; no requieren registro de validadores por módulo.
 
 ## Cuándo incluirlo
 
@@ -29,8 +29,4 @@ Adapta namespaces y duraciones (`Scoped`, `Transient`, etc.) a la composición e
 - Este archivo es integración del backend, no parte de la lógica de negocio de las slices. Omítelo si el registro automático ya cubre los tipos.
 - `GetById` y el único `GetAll` paginado comparten siempre `Get.Handler` y el contrato de elemento; registra un solo handler.
 - `Cotizacion` y `ProductoCotizacion` se registran en módulos distintos. Una lectura del padre puede proyectar datos de una referencia superior como `Cliente`, pero no ejecuta handlers del hijo ni publica su listado bajo el módulo padre.
-- Una entrada anidada reutilizada entre Create y Update conserva un contrato compartido cuando ambas slices lo usan; valida sus miembros explícitamente según [validator.md](validator.md). Aprovecha los puertos de tiempo/usuario ya registrados por el host, no crees dobles registros por handler.
-
-### Transición heredada
-
-El runtime actual todavía registra validators FluentValidation para slices existentes. Consérvalos hasta una migración coordinada; no añadas nuevos registros ni los retires parcialmente como parte de una slice ordinaria.
+- Una entrada anidada reutilizada entre Create y Update conserva un contrato compartido cuando ambas slices lo usan; MVC valida sus miembros al enlazar el modelo, según [validator.md](validator.md). Aprovecha los puertos de tiempo/usuario ya registrados por el host, no crees dobles registros por handler.
